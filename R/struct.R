@@ -52,9 +52,9 @@ prob_template <- function(states, x, group) {
 struct <- function(...) UseMethod("struct")
 
 #' @export
-struct.manual <- function(x, prob, l_prob = NULL, u_prob = NULL) {
+struct.manual <- function(states, group = NULL, x, prob, l_prob = NULL, u_prob = NULL) {
   n <- length(x)
-  s <- list(x = x, prob = prob)
+  s <- list(states = states, group = group, x = x, prob = prob)
   class(s) <- "struct"
   s[["l_prob"]] <- l_prob
   s[["u_prob"]] <- u_prob
@@ -100,6 +100,8 @@ struct.multinom <- function(fit,
   }
 
   return(struct.manual(
+    states = states,
+    group = group,
     x = x,
     prob = prob
   ))

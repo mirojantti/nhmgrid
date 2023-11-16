@@ -11,6 +11,12 @@ if (FALSE) {
     #fixed_predictors = list(sex = "male"))
     group = list(name = "sex", values = c("male", "female")))
 
+  str(ffit_struct)
+
+  plot(ffit_struct)
+
+  View(ffit_struct$prob)
+
   ffit_eff <- effects::Effect(
     c("age", "lagstate", "sex"),
     ffit,
