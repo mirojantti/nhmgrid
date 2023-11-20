@@ -6,29 +6,22 @@
 #' @importFrom ggplot2 scale_y_continuous
 #' @export
 plot.struct <- function(struct) {
-  n_states <- length(struct$states)
+  n_states <- length(struct$state$values)
   n_cases <- n_states * n_states
-  n_groups <- if (is.null(struct$group)) 0 else length(struct$group$values)
+  n_groups <- orElse(length(struct$group$values), 0)
 
-  pw <- lapply(1:n_cases, \(i) {
+  pw <- Reduce(`+`, lapply(1:n_cases, \(i) {
     x <- ifelse(i %% n_states != 0, i %% n_states, n_states)
     y <- floor((i - 1) / n_states) + 1
     trans <- paste0(struct$states[y], "->", struct$states[x])
     ci <- (i - 1) * max(1, n_groups) + 1
     cj <- ifelse(n_groups != 0, ci + n_groups - 1, ci)
-    plot_cell(
-      grid_coords = list(x = x, y = y),
-      states = struct$states,
-      x = struct$x,
-      prob = struct$prob[, ci:cj],
-      group = struct$group,
-      trans = trans
-    )
-  }) |> (\(x) Reduce(`+`, x))() +
-  patchwork::plot_layout(
-    guides = "collect",
-    ncol = n_states,
-    nrow = n_states)
+    plot_cell(struct, x, y)
+  })) +
+    patchwork::plot_layout(
+      guides = "collect",
+      ncol = n_states,
+      nrow = n_states)
 
   y_axis <- ggplot() +
       ggplot2::ylab("transition probability") +
@@ -51,43 +44,46 @@ plot.struct <- function(struct) {
 #' @importFrom ggplot2 element_blank
 #' @importFrom ggplot2 element_line
 #' @importFrom ggplot2 scale_y_continuous
-plot_cell <- function(grid_coords, states, x, prob, group, trans) {
+#' @importFrom ggplot2 scale_color_discrete
+plot_cell <- function(struct, gx, gy) {
+  state_from <- struct$state$values[gy]
+  state_to <- struct$state$values[gx]
   settings <- list(
     labs(
       x = NULL,
-      y = if(grid_coords$x == 1) states[grid_coords$y] else NULL,
-      subtitle = if(grid_coords$y == 1) states[grid_coords$x] else NULL
+      y = if(gx == 1) state_from else NULL,
+      subtitle = if(gy == 1) state_to else NULL
     ),
     scale_y_continuous(limits = c(0, 1)),
+    scale_color_discrete(name = struct$group$name),
     theme(
       plot.subtitle = element_text(hjust = 0.5)
     )
   )
-  if(grid_coords$y != length(states)) {
+  if(gy != length(struct$state$values)) {
     settings[[length(settings) + 1]] <- theme(
       axis.text.x = element_blank(),
       axis.ticks.x = element_blank()
     )
   }
-  if(grid_coords$x != 1) {
+  if(gx != 1) {
     settings[[length(settings) + 1]] <- theme(
       axis.text.y = element_blank(),
       axis.ticks.y = element_blank()
     )
   }
 
-  ggplot() +
-    (if (!is.null(group)) {
-      lapply(group$values, \(g) {
-        geom_line(aes(
-          x = x$values,
-          y = prob[, get(paste0(g, ": ", trans))],
-          color = g))
-      })
+
+  cell_data <- struct$prob[
+    trans_dest == state_to & struct$prob[[struct$state$name]] == state_from]
+  ggplot(
+    data = cell_data,
+    mapping = aes(x = cell_data[[struct$x$name]])
+  ) +
+    (if (!is.null(struct$group)) {
+      geom_line(aes(y = trans_prob, color = cell_data[[struct$group$name]]))
     } else {
-      geom_line(aes(
-        x = x$values,
-        y = prob[, get(trans)]))
+      geom_line(aes(y = trans_prob))
     }) +
     settings
 }
