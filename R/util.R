@@ -1,3 +1,8 @@
 orElse <- function(x, errorValue) {
-  tryCatch(x, error = \(e) errorValue)
+  return(tryCatch({
+    if (is.null(x)) {
+      stop()
+    }
+    return(x)
+  }, error = \(e) errorValue))
 }
