@@ -1,3 +1,5 @@
+utils::globalVariables(c("x", "group", "from", "to", "mean", "lower", "upper"))
+
 #' Simulated health state dataset
 #'
 #' This panel data contains simulated health state measurements from multiple
