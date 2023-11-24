@@ -1,39 +1,19 @@
 # "struct" is a temporary name for the structure that holds the necessary
 # data to plot the transition probabilities
 
-format_transition <- Vectorize(function(group, from, to) {
-  if (is.null(group)) {
-    return(paste0(from, "->", to))
-  }
-  return(paste0(group, ": ", from, "->", to))
-}, vectorize.args = "to", USE.NAMES = FALSE)
-
-#' @importFrom data.table as.data.table
-#' @export
-prob_template <- function(states, x, group) {
-  nx <- length(x$values)
-  nstates <- length(states)
-  if (is.null(group)) {
-    return(setnames(
-      matrix(nrow = nx, ncol = nstates * nstates) |>
-        data.table::as.data.table(),
-      expand.grid(states, states) |> # TODO CJ?
-        apply(MARGIN = 1, FUN = \(row) format_transition(NULL, row[2], row[1]))
-    ))
-  } else {
-    ngroups <- length(group$values)
-    return(setnames(
-      matrix(nrow = nx, ncol = nstates * nstates * ngroups) |>
-        data.table::as.data.table(),
-      expand.grid(group$values, states, states) |>
-        apply(MARGIN = 1, FUN = \(row) format_transition(row[1], row[3], row[2]))
-    ))
-  }
-}
-
+#' TODO document
+#'
+#' @param ... description
+#'
 #' @export
 struct <- function(...) UseMethod("struct")
 
+#' TODO document
+#'
+#' @param state description
+#' @param x description
+#' @param group description
+#' @param prob description
 #' @export
 struct.manual <- function(state, x, group = NULL, prob) {
   n <- length(x)
@@ -41,7 +21,15 @@ struct.manual <- function(state, x, group = NULL, prob) {
   class(s) <- "struct"
   return(s)
 }
-
+#' TODO document
+#'
+#' @param fit description
+#' @param state_name description
+#' @param x description
+#' @param group description
+#' @param fixed_predictors description
+#' @param interval description
+#'
 #' @import data.table
 #' @export
 struct.multinom <- function(fit,
@@ -66,7 +54,7 @@ struct.multinom <- function(fit,
     ")"
   )))
 
-  p <- predict(fit, type = "probs", newdata = new_data)
+  p <- stats::predict(fit, type = "probs", newdata = new_data)
 
   try(new_data[, names(fixed_predictors) := NULL], silent = TRUE)
 
@@ -83,6 +71,16 @@ struct.multinom <- function(fit,
   ))
 }
 
+#' TODO document
+#'
+#' @param fit description
+#' @param state_name description
+#' @param x_values description
+#' @param group description
+#' @param fixed_predictors description
+#' @param interval description
+#'
+#' @import data.table
 #' @export
 struct.dynamitefit <- function(fit,
                                state_name,
@@ -108,7 +106,7 @@ struct.dynamitefit <- function(fit,
   }
 
   has_random = any(grepl("(\\s|~)+random\\s*\\(", fit$call))
-  new_data <- unique(na.omit(fit$data)[, c(fit$group_var, group$name), with = FALSE])
+  new_data <- unique(stats::na.omit(fit$data)[, c(fit$group_var, group$name), with = FALSE])
   if (!has_random) {
     if (!is.null(group)) {
       new_data <- unique(new_data, by = group$name)
@@ -126,28 +124,30 @@ struct.dynamitefit <- function(fit,
   for (s in state$values) {
     new_data[, state$name := list(s)]
 
-    p <- na.omit(fitted(fit, newdata = new_data, df = FALSE))[
+    p <- stats::na.omit(stats::fitted(fit, newdata = new_data, df = FALSE))[
       ,
       as.list(unlist(lapply(.SD, \(q) list(
         mean = mean(q),
-        quantile = quantile(q, c(0.025, 0.975), names = FALSE)
+        quantile = stats::quantile(q, c(0.025, 0.975), names = FALSE)
       )))),
       .SDcols = 1:n_states,
       by = c(x$name, group$name)
     ]
 
-    setnames(p, c(x$name, orElse(group$name, "")), c("x", "group"), skip_absent = TRUE)
+    data.table::setnames(p, c(x$name, orElse(group$name, "")), c("x", "group"), skip_absent = TRUE)
 
-    p <- melt(p,
-              id = NULL,
-              measure.vars = patterns(".+\\.mean$", ".+\\.quantile1$", ".+\\.quantile2$"),
-              value.name = c("mean", "lower", "upper"),
-              variable.name = "to")[, to := state$values[to]]
+    p <- data.table::melt(
+      p,
+      id = NULL,
+      measure.vars = patterns(".+\\.mean$", ".+\\.quantile1$", ".+\\.quantile2$"),
+      value.name = c("mean", "lower", "upper"),
+      variable.name = "to"
+      )[, to := state$values[to]]
     p[, from := list(s)]
     prob[
       p,
       c("mean", "lower", "upper") := list(i.mean, i.lower, i.upper),
-      on = na.omit(c("x", ifelse(!is.null(group), "group", NA), "from", "to"))
+      on = stats::na.omit(c("x", ifelse(!is.null(group), "group", NA), "from", "to"))
     ]
   }
 

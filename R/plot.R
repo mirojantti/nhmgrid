@@ -1,33 +1,32 @@
-#' @importFrom ggplot2 ggplot
-#' @importFrom ggplot2 aes
-#' @importFrom ggplot2 geom_line
-#' @importFrom ggplot2 xlab
-#' @importFrom ggplot2 ylab
-#' @importFrom ggplot2 scale_y_continuous
+#' TODO document
+#'
+#' @param x description
+#' @param ... description
+#'
 #' @export
-plot.struct <- function(struct) {
-  n_states <- length(struct$state$values)
+plot.struct <- function(x, ...) {
+  n_states <- length(x$state$values)
   n_cases <- n_states * n_states
-  n_groups <- orElse(length(struct$group$values), 0)
+  n_groups <- orElse(length(x$group$values), 0)
 
   pw <- Reduce(`+`, lapply(1:n_cases, \(i) {
     x <- ifelse(i %% n_states != 0, i %% n_states, n_states)
     y <- floor((i - 1) / n_states) + 1
-    trans <- paste0(struct$states[y], "->", struct$states[x])
+    trans <- paste0(x$states[y], "->", x$states[x])
     ci <- (i - 1) * max(1, n_groups) + 1
     cj <- ifelse(n_groups != 0, ci + n_groups - 1, ci)
-    plot_cell(struct, x, y)
+    plot_cell(x, x, y)
   })) +
     patchwork::plot_layout(
       guides = "collect",
       ncol = n_states,
       nrow = n_states)
 
-  y_axis <- ggplot() +
+  y_axis <- ggplot2::ggplot() +
       ggplot2::ylab("transition probability") +
     patchwork::plot_layout(widths = 0, heights = 0)
-  x_axis <- ggplot() +
-    ggplot2::xlab(struct$x$name) +
+  x_axis <- ggplot2::ggplot() +
+    ggplot2::xlab(x$x$name) +
     patchwork::plot_layout(widths = 0, heights = 0)
 
   (((y_axis | pw) + patchwork::plot_layout(widths = c(0, 1))) / x_axis) +
@@ -35,63 +34,58 @@ plot.struct <- function(struct) {
 
 }
 
-#' @importFrom ggplot2 ggplot
-#' @importFrom ggplot2 aes
-#' @importFrom ggplot2 geom_line
-#' @importFrom ggplot2 labs
-#' @importFrom ggplot2 theme
-#' @importFrom ggplot2 element_text
-#' @importFrom ggplot2 element_blank
-#' @importFrom ggplot2 element_line
-#' @importFrom ggplot2 scale_y_continuous
-#' @importFrom ggplot2 scale_color_discrete
-#' @importFrom ggplot2 scale_fill_discrete
+#' TODO document
+#'
+#' @param struct description
+#' @param gx description
+#' @param gy description
+#'
 plot_cell <- function(struct, gx, gy) {
   state_from <- struct$state$values[gy]
   state_to <- struct$state$values[gx]
   settings <- list(
-    labs(
+    ggplot2::labs(
       x = NULL,
       y = if(gx == 1) state_from else NULL,
       subtitle = if(gy == 1) state_to else NULL
     ),
-    scale_y_continuous(limits = c(0, 1)),
-    scale_color_discrete(name = struct$group$name),
-    scale_fill_discrete(name = struct$group$name),
-    theme(
-      plot.subtitle = element_text(hjust = 0.5)
+    ggplot2::scale_y_continuous(limits = c(0, 1)),
+    ggplot2::scale_color_discrete(name = struct$group$name),
+    ggplot2::scale_fill_discrete(name = struct$group$name),
+    ggplot2::theme(
+      plot.subtitle = ggplot2::element_text(hjust = 0.5)
     )
   )
   if(gy != length(struct$state$values)) {
-    settings[[length(settings) + 1]] <- theme(
-      axis.text.x = element_blank(),
-      axis.ticks.x = element_blank()
+    settings[[length(settings) + 1]] <- ggplot2::theme(
+      axis.text.x = ggplot2::element_blank(),
+      axis.ticks.x = ggplot2::element_blank()
     )
   }
   if(gx != 1) {
-    settings[[length(settings) + 1]] <- theme(
-      axis.text.y = element_blank(),
-      axis.ticks.y = element_blank()
+    settings[[length(settings) + 1]] <- ggplot2::theme(
+      axis.text.y = ggplot2::element_blank(),
+      axis.ticks.y = ggplot2::element_blank()
     )
   }
 
 
-  cell_data <- struct$prob[ to == state_to & struct$prob$from == state_from]
-  ggplot(
+  cell_data <- struct$prob[to == state_to & struct$prob$from == state_from]
+  ggplot2::ggplot(
     data = cell_data,
-    mapping = aes(x = cell_data$x)
+    mapping = ggplot2::aes(x = cell_data$x)
   ) +
     (if (all(c("lower", "upper") %in% colnames(cell_data))) {
       if (!is.null(struct$group)) {
-        geom_ribbon(aes(ymin = lower, ymax = upper, fill = group), alpha = 0.25)
+        ggplot2::geom_ribbon(ggplot2::aes(ymin = lower, ymax = upper, fill = group), alpha = 0.25)
       } else {
-        geom_ribbon(aes(ymin = lower, ymax = upper), alpha = 0.25)
+        ggplot2::geom_ribbon(ggplot2::aes(ymin = lower, ymax = upper), alpha = 0.25)
       }
     }) +
     (if (!is.null(struct$group)) {
-      geom_line(aes(y = mean, color = cell_data$group))
+      ggplot2::geom_line(ggplot2::aes(y = mean, color = cell_data$group))
     } else {
-      geom_line(aes(y = mean))
+      ggplot2::geom_line(ggplot2::aes(y = mean))
     }) +
     settings
 }

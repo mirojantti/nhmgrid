@@ -1,4 +1,7 @@
-utils::globalVariables(c("x", "group", "from", "to", "mean", "lower", "upper"))
+utils::globalVariables(c(
+  "x", "group", "from", "to", "mean", "lower", "upper", "i.mean", "i.lower",
+  "i.upper", "patterns"
+))
 
 #' Simulated health state dataset
 #'
