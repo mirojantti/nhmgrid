@@ -22,7 +22,7 @@ if (FALSE) {
   # dynamite
   #################
   bfit <- dynamite::dynamite(
-    dynamite::obs(state ~ varying(~ -1 + lag(state)) + sex, "categorical") +
+    dynamite::obs(state ~ -1 + varying(~ -1 + lag(state)) + sex, "categorical") +
       dynamite::splines(df = 10),
     data = gradu::health,
     time = "age",
