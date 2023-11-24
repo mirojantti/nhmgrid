@@ -45,6 +45,7 @@ plot.struct <- function(struct) {
 #' @importFrom ggplot2 element_line
 #' @importFrom ggplot2 scale_y_continuous
 #' @importFrom ggplot2 scale_color_discrete
+#' @importFrom ggplot2 scale_fill_discrete
 plot_cell <- function(struct, gx, gy) {
   state_from <- struct$state$values[gy]
   state_to <- struct$state$values[gx]
@@ -56,6 +57,7 @@ plot_cell <- function(struct, gx, gy) {
     ),
     scale_y_continuous(limits = c(0, 1)),
     scale_color_discrete(name = struct$group$name),
+    scale_fill_discrete(name = struct$group$name),
     theme(
       plot.subtitle = element_text(hjust = 0.5)
     )
@@ -74,16 +76,22 @@ plot_cell <- function(struct, gx, gy) {
   }
 
 
-  cell_data <- struct$prob[
-    trans_dest == state_to & struct$prob[[struct$state$name]] == state_from]
+  cell_data <- struct$prob[ to == state_to & struct$prob$from == state_from]
   ggplot(
     data = cell_data,
-    mapping = aes(x = cell_data[[struct$x$name]])
+    mapping = aes(x = cell_data$x)
   ) +
+    (if (all(c("lower", "upper") %in% colnames(cell_data))) {
+      if (!is.null(struct$group)) {
+        geom_ribbon(aes(ymin = lower, ymax = upper, fill = group), alpha = 0.25)
+      } else {
+        geom_ribbon(aes(ymin = lower, ymax = upper), alpha = 0.25)
+      }
+    }) +
     (if (!is.null(struct$group)) {
-      geom_line(aes(y = trans_prob, color = cell_data[[struct$group$name]]))
+      geom_line(aes(y = mean, color = cell_data$group))
     } else {
-      geom_line(aes(y = trans_prob))
+      geom_line(aes(y = mean))
     }) +
     settings
 }
