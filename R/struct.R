@@ -14,8 +14,10 @@ struct <- function(...) UseMethod("struct")
 #' @param x description
 #' @param group description
 #' @param prob description
+#' @param ... description
+#'
 #' @export
-struct.manual <- function(state, x, group = NULL, prob) {
+struct.manual <- function(state, x, group = NULL, prob, ...) {
   n <- length(x)
   s <- list(state = state, x = x, group = group, prob = prob)
   class(s) <- "struct"
@@ -29,6 +31,7 @@ struct.manual <- function(state, x, group = NULL, prob) {
 #' @param group description
 #' @param fixed_predictors description
 #' @param interval description
+#' @param ... description
 #'
 #' @import data.table
 #' @export
@@ -37,7 +40,8 @@ struct.multinom <- function(fit,
                             x,
                             group = NULL,
                             fixed_predictors = NULL,
-                            interval = NULL) {
+                            interval = NULL,
+                            ...) {
   state <- list(name = state_name, values = fit$xlevels[[state_name]])
 
   new_data <- eval(parse(text = paste0(
@@ -79,6 +83,7 @@ struct.multinom <- function(fit,
 #' @param group description
 #' @param fixed_predictors description
 #' @param interval description
+#' @param ... description
 #'
 #' @import data.table
 #' @export
@@ -87,7 +92,8 @@ struct.dynamitefit <- function(fit,
                                x_values = NULL,
                                group = NULL,
                                fixed_predictors = NULL,
-                               interval = NULL) {
+                               interval = NULL,
+                               ...) {
   state <- list(name = state_name, values = levels(fit$data[[state_name]]))
   x <- list(name = fit$time_var, values = orElse(x_values, unique(fit$data[[fit$time_var]])))
 

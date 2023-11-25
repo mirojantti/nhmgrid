@@ -4,7 +4,7 @@
 \alias{struct.manual}
 \title{TODO document}
 \usage{
-\method{struct}{manual}(state, x, group = NULL, prob)
+\method{struct}{manual}(state, x, group = NULL, prob, ...)
 }
 \arguments{
 \item{state}{description}
@@ -14,6 +14,8 @@
 \item{group}{description}
 
 \item{prob}{description}
+
+\item{...}{description}
 }
 \description{
 TODO document

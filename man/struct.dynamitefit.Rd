@@ -10,7 +10,8 @@
   x_values = NULL,
   group = NULL,
   fixed_predictors = NULL,
-  interval = NULL
+  interval = NULL,
+  ...
 )
 }
 \arguments{
@@ -25,6 +26,8 @@
 \item{fixed_predictors}{description}
 
 \item{interval}{description}
+
+\item{...}{description}
 }
 \description{
 TODO document
