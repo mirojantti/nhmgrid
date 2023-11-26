@@ -10,7 +10,7 @@ if (FALSE) {
 
   ffit_struct <- gradu::struct(
     ffit,
-    state_name = "lagstate",
+    state = "lagstate",
     x = list(name = "age", values = 3:59),
     #fixed_predictors = list(sex = "male")
     group = list(name = "sex", values = c("male", "female"))
@@ -39,7 +39,7 @@ if (FALSE) {
 
   bfit_struct <- gradu::struct(
     bfit,
-    state_name = "state",
+    state = "state",
     #fixed_predictors = list(sex = "male")
     group = list(name = "sex", values = c("male", "female"))
   )

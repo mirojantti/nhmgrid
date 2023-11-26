@@ -5,13 +5,15 @@
 \alias{health}
 \title{Simulated health state dataset}
 \format{
-## `health`
+\subsection{\code{health}}{
+
 A data frame with 500 rows and 4 columns:
 \describe{
-  \item{id}{Person identification number}
-  \item{age}{Person age in years}
-  \item{state}{Measured health state: healthy, sick or deceased}
-  \item{lagstate}{Previous measured health state}
+\item{id}{Person identification number}
+\item{age}{Person age in years}
+\item{state}{Measured health state: healthy, sick or deceased}
+\item{lagstate}{Previous measured health state}
+}
 }
 }
 \usage{

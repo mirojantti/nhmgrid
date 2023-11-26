@@ -10,12 +10,9 @@ plot.struct <- function(x, ...) {
   n_groups <- orElse(length(x$group$values), 0)
 
   pw <- Reduce(`+`, lapply(1:n_cases, \(i) {
-    x <- ifelse(i %% n_states != 0, i %% n_states, n_states)
-    y <- floor((i - 1) / n_states) + 1
-    trans <- paste0(x$states[y], "->", x$states[x])
-    ci <- (i - 1) * max(1, n_groups) + 1
-    cj <- ifelse(n_groups != 0, ci + n_groups - 1, ci)
-    plot_cell(x, x, y)
+    gx <- ifelse(i %% n_states != 0, i %% n_states, n_states)
+    gy <- floor((i - 1) / n_states) + 1
+    plot_cell(x, gx, gy)
   })) +
     patchwork::plot_layout(
       guides = "collect",

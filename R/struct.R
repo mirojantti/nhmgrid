@@ -1,12 +1,6 @@
 # "struct" is a temporary name for the structure that holds the necessary
 # data to plot the transition probabilities
 
-#' TODO document
-#'
-#' @param ... description
-#'
-#' @export
-struct <- function(...) UseMethod("struct")
 
 #' TODO document
 #'
@@ -17,37 +11,95 @@ struct <- function(...) UseMethod("struct")
 #' @param ... description
 #'
 #' @export
-struct.manual <- function(state, x, group = NULL, prob, ...) {
+manual_struct <- function(state, x, group = NULL, prob, ...) {
   n <- length(x)
   s <- list(state = state, x = x, group = group, prob = prob)
   class(s) <- "struct"
   return(s)
 }
-#' TODO document
+
+#' A generic method to estimate transition probabilities.
 #'
-#' @param fit description
-#' @param state_name description
-#' @param x description
-#' @param group description
-#' @param fixed_predictors description
-#' @param interval description
-#' @param ... description
+#' Estimates the transition probabilities within groups over time using
+#' a Markov model.
 #'
+#' @param fit
+#' The model object.
+#' @param state \[`character(1) or list(name, values = NULL)`\]\cr
+#' Either the name of the column that denotes the state of observations or
+#' a named list of the column name and the desired state values.
+#' See 'Details'.
+#' @param x \[`character(1) or list(name, values = NULL)`\]\cr
+#' Either the name of the column to be used as the x-axis or
+#' a named list of the column name and the desired x values.
+#' See 'Details'.
+#' @param group \[`character(1) or list(name, values = NULL)`\]\cr
+#' Either the name of the column to be used as the grouping variable or
+#' a named list of the column name and the desired grouping values.
+#' If `NULL`, the observations will not be grouped.
+#' See 'Details'.
+#' @param fixed_predictors \[`list()`\]\cr
+#' A named list of parameters to control the other predictors used in the model.
+#' @param interval \[`numeric(1)`\]\cr
+#' The level of confidence/credible interval.
+#' @param ...
+#' Ignored.
+#'
+#' @details
+#' Please view the 'Details' of a specific extended `struct` method.
+#' All of the extension methods are listed in the 'See Also' section.
+#'
+#' @returns
+#' A `struct` object which is a list containing the following components:
+#' * `state`\cr A list of the state variable name and values.
+#' * `x`\cr A list of the x-axis variable name and values.
+#' * `group`\cr A list of the grouping variable name and values.
+#' * `prob`\cr A `data.table` object of the transition probabilities between the states.
+#'
+#' @family struct
+#' @export
+struct <- function(fit,
+                   state,
+                   x,
+                   group = NULL,
+                   fixed_predictors = NULL,
+                   interval = NULL,
+                   ...) {
+  UseMethod("struct")
+}
+
+#' Estimate transition probabilities using a `multinom` Markov model.
+#'
+#' @inherit struct description
+#'
+#' @inheritParams struct
+#' @param fit \[`nnet::multinom`\]\cr
+#' The model object. See [nnet::multinom()].
+#' @param x \[`character(1) or list(name, values)`\]\cr
+#' Either the name of the column to be used as the x-axis or
+#' a named list of the column name and the desired x values.
+#' See 'Details'.
+#'
+#' @details
+#' Additional details...
+#'
+#' @inherit struct return
+#' @family struct
 #' @import data.table
 #' @export
 struct.multinom <- function(fit,
-                            state_name,
+                            state,
                             x,
                             group = NULL,
                             fixed_predictors = NULL,
                             interval = NULL,
                             ...) {
-  state <- list(name = state_name, values = fit$xlevels[[state_name]])
+  state <- list(name = state, values = fit$xlevels[[state]])
 
   new_data <- eval(parse(text = paste0(
     "data.table::CJ(",
     x$name, "=", expression(x$values),
-    ", ", state_name, "=", expression(state$values),
+    ", ", state$name, "=", expression(state$values),
     if (!is.null(group))
       paste0(", ", group$name, "=", expression(group$values)),
     if (!is.null(fixed_predictors))
@@ -67,7 +119,7 @@ struct.multinom <- function(fit,
   prob[, c("to", "mean") :=
          list(rep(colnames(p), times = nrow(new_data)), c(t(p)))]
 
-  return(struct.manual(
+  return(manual_struct(
     state = state,
     x = x,
     group = group,
@@ -75,27 +127,34 @@ struct.multinom <- function(fit,
   ))
 }
 
-#' TODO document
+#' Estimate transition probabilities using a `dynamitefit` Markov model.
 #'
-#' @param fit description
-#' @param state_name description
-#' @param x_values description
-#' @param group description
-#' @param fixed_predictors description
-#' @param interval description
-#' @param ... description
+#' @inherit struct description
 #'
+#' @inheritParams struct
+#' @param fit \[`dynamite::dynamitefit`\]\cr
+#' The model object. See [dynamite::dynamite()].
+#' @param x \[`character(1) or list(name = NULL, values)`\]\cr
+#' Either the name of the column to be used as the x-axis or
+#' a named list of the column name and the desired x values.
+#' See 'Details'.
+#'
+#' @details
+#' Additional details...
+#'
+#' @inherit struct return
+#' @family struct
 #' @import data.table
 #' @export
 struct.dynamitefit <- function(fit,
-                               state_name,
-                               x_values = NULL,
+                               state,
+                               x = NULL,
                                group = NULL,
                                fixed_predictors = NULL,
                                interval = NULL,
                                ...) {
-  state <- list(name = state_name, values = levels(fit$data[[state_name]]))
-  x <- list(name = fit$time_var, values = orElse(x_values, unique(fit$data[[fit$time_var]])))
+  state <- list(name = state, values = levels(fit$data[[state]]))
+  x <- list(name = fit$time_var, values = orElse(x, unique(fit$data[[fit$time_var]])))
 
   n_states <- length(state$values)
 
@@ -111,7 +170,7 @@ struct.dynamitefit <- function(fit,
     prob[, group := NULL]
   }
 
-  has_random = any(grepl("(\\s|~)+random\\s*\\(", fit$call))
+  has_random <- any(grepl("(\\s|~)+random\\s*\\(", fit$call))
   new_data <- unique(stats::na.omit(fit$data)[, c(fit$group_var, group$name), with = FALSE])
   if (!has_random) {
     if (!is.null(group)) {
@@ -157,7 +216,7 @@ struct.dynamitefit <- function(fit,
     ]
   }
 
-  return(struct.manual(
+  return(manual_struct(
     state = state,
     x = x,
     group = group,

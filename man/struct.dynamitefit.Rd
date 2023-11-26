@@ -2,12 +2,12 @@
 % Please edit documentation in R/struct.R
 \name{struct.dynamitefit}
 \alias{struct.dynamitefit}
-\title{TODO document}
+\title{Estimate transition probabilities using a \code{dynamitefit} Markov model.}
 \usage{
 \method{struct}{dynamitefit}(
   fit,
-  state_name,
-  x_values = NULL,
+  state,
+  x = NULL,
   group = NULL,
   fixed_predictors = NULL,
   interval = NULL,
@@ -15,20 +15,52 @@
 )
 }
 \arguments{
-\item{fit}{description}
+\item{fit}{[\code{dynamite::dynamitefit}]\cr
+The model object. See \code{\link[dynamite:dynamite]{dynamite::dynamite()}}.}
 
-\item{state_name}{description}
+\item{state}{[\verb{character(1) or list(name, values = NULL)}]\cr
+Either the name of the column that denotes the state of observations or
+a named list of the column name and the desired state values.
+See 'Details'.}
 
-\item{x_values}{description}
+\item{x}{[\verb{character(1) or list(name = NULL, values)}]\cr
+Either the name of the column to be used as the x-axis or
+a named list of the column name and the desired x values.
+See 'Details'.}
 
-\item{group}{description}
+\item{group}{[\verb{character(1) or list(name, values = NULL)}]\cr
+Either the name of the column to be used as the grouping variable or
+a named list of the column name and the desired grouping values.
+If \code{NULL}, the observations will not be grouped.
+See 'Details'.}
 
-\item{fixed_predictors}{description}
+\item{fixed_predictors}{[\code{list()}]\cr
+A named list of parameters to control the other predictors used in the model.}
 
-\item{interval}{description}
+\item{interval}{[\code{numeric(1)}]\cr
+The level of confidence/credible interval.}
 
-\item{...}{description}
+\item{...}{Ignored.}
+}
+\value{
+A \code{struct} object which is a list containing the following components:
+\itemize{
+\item \code{state}\cr A list of the state variable name and values.
+\item \code{x}\cr A list of the x-axis variable name and values.
+\item \code{group}\cr A list of the grouping variable name and values.
+\item \code{prob}\cr A \code{data.table} object of the transition probabilities between the states.
+}
 }
 \description{
-TODO document
+Estimates the transition probabilities within groups over time using
+a Markov model.
 }
+\details{
+Additional details...
+}
+\seealso{
+Other struct: 
+\code{\link{struct.multinom}()},
+\code{\link{struct}()}
+}
+\concept{struct}

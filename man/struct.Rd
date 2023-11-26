@@ -2,13 +2,65 @@
 % Please edit documentation in R/struct.R
 \name{struct}
 \alias{struct}
-\title{TODO document}
+\title{A generic method to estimate transition probabilities.}
 \usage{
-struct(...)
+struct(
+  fit,
+  state,
+  x,
+  group = NULL,
+  fixed_predictors = NULL,
+  interval = NULL,
+  ...
+)
 }
 \arguments{
-\item{...}{description}
+\item{fit}{The model object.}
+
+\item{state}{[\verb{character(1) or list(name, values = NULL)}]\cr
+Either the name of the column that denotes the state of observations or
+a named list of the column name and the desired state values.
+See 'Details'.}
+
+\item{x}{[\verb{character(1) or list(name, values = NULL)}]\cr
+Either the name of the column to be used as the x-axis or
+a named list of the column name and the desired x values.
+See 'Details'.}
+
+\item{group}{[\verb{character(1) or list(name, values = NULL)}]\cr
+Either the name of the column to be used as the grouping variable or
+a named list of the column name and the desired grouping values.
+If \code{NULL}, the observations will not be grouped.
+See 'Details'.}
+
+\item{fixed_predictors}{[\code{list()}]\cr
+A named list of parameters to control the other predictors used in the model.}
+
+\item{interval}{[\code{numeric(1)}]\cr
+The level of confidence/credible interval.}
+
+\item{...}{Ignored.}
+}
+\value{
+A \code{struct} object which is a list containing the following components:
+\itemize{
+\item \code{state}\cr A list of the state variable name and values.
+\item \code{x}\cr A list of the x-axis variable name and values.
+\item \code{group}\cr A list of the grouping variable name and values.
+\item \code{prob}\cr A \code{data.table} object of the transition probabilities between the states.
+}
 }
 \description{
-TODO document
+Estimates the transition probabilities within groups over time using
+a Markov model.
 }
+\details{
+Please view the 'Details' of a specific extended \code{struct} method.
+All of the extension methods are listed in the 'See Also' section.
+}
+\seealso{
+Other struct: 
+\code{\link{struct.dynamitefit}()},
+\code{\link{struct.multinom}()}
+}
+\concept{struct}

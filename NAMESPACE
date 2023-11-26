@@ -2,7 +2,7 @@
 
 S3method(plot,struct)
 S3method(struct,dynamitefit)
-S3method(struct,manual)
 S3method(struct,multinom)
+export(manual_struct)
 export(struct)
 import(data.table)

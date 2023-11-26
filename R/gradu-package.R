@@ -3,6 +3,22 @@ utils::globalVariables(c(
   "i.upper", "patterns"
 ))
 
+
+#' The `gradu` package.
+#'
+#' An user friendly interface to estimating state transition probabilities
+#' using a Markov model. Includes plotting tools to visualize the probabilities
+#' over time between groups.
+#'
+#' # See also
+#' * [struct()] for information on estimating transition probabilities.
+#' * [plot.struct()] for information on plotting the probabilities.
+#' * \href{https://github.com/joakim219/gradu/issues/}{Submit a bug report or a feature request}
+#'
+#' @docType package
+#' @name gradu
+NULL
+
 #' Simulated health state dataset
 #'
 #' This panel data contains simulated health state measurements from multiple
