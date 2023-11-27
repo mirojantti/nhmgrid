@@ -8,6 +8,14 @@ plot.struct <- function(x, ...) {
   n_states <- length(x$state$values)
   n_cases <- n_states * n_states
   n_groups <- orElse(length(x$group$values), 0)
+  fixed_predictors <- attr(x, "fixed_predictors")
+  if (is.list(fixed_predictors)) {
+    subtitle <- paste(lapply(seq_len(length(fixed_predictors)), \(i) {
+      paste(names(fixed_predictors)[i], "=", fixed_predictors[i])
+    }), collapse = ", ")
+  } else {
+    subtitle <- NULL
+  }
 
   pw <- Reduce(`+`, lapply(1:n_cases, \(i) {
     gx <- ifelse(i %% n_states != 0, i %% n_states, n_states)
@@ -27,7 +35,11 @@ plot.struct <- function(x, ...) {
     patchwork::plot_layout(widths = 0, heights = 0)
 
   (((y_axis | pw) + patchwork::plot_layout(widths = c(0, 1))) / x_axis) +
-    patchwork::plot_layout(heights = c(1, 0))
+    patchwork::plot_layout(heights = c(1, 0)) +
+    patchwork::plot_annotation(
+      title = "State transition probability matrix",
+      subtitle = subtitle
+    )
 
 }
 

@@ -118,12 +118,14 @@ struct.multinom <- function(fit,
   colnames(prob) <- c("x", "from", "group")
   prob[, c("to", "mean") := list(rep(colnames(p), times = nrow(new_data)), c(t(p)))]
 
-  return(manual_struct(
+  struct <- manual_struct(
     state = args$state,
     x = args$x,
     group = args$group,
     prob = prob
-  ))
+  )
+  attr(struct, "fixed_predictors") <- fixed_predictors
+  return(struct)
 }
 
 #' Estimate transition probabilities using a `dynamitefit` Markov model.
