@@ -6,8 +6,8 @@
 \usage{
 struct(
   fit,
-  state,
   x,
+  state = NULL,
   group = NULL,
   fixed_predictors = NULL,
   interval = NULL,
@@ -17,14 +17,14 @@ struct(
 \arguments{
 \item{fit}{The model object.}
 
-\item{state}{[\verb{character(1) or list(name, values = NULL)}]\cr
-Either the name of the column that denotes the state of observations or
-a named list of the column name and the desired state values.
-See 'Details'.}
-
 \item{x}{[\verb{character(1) or list(name, values = NULL)}]\cr
 Either the name of the column to be used as the x-axis or
 a named list of the column name and the desired x values.
+See 'Details'.}
+
+\item{state}{[\verb{character(1) or list(name, values = NULL)}]\cr
+Either the name of the column that denotes the state of observations or
+a named list of the column name and the desired state values.
 See 'Details'.}
 
 \item{group}{[\verb{character(1) or list(name, values = NULL)}]\cr
