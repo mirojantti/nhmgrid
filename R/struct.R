@@ -276,7 +276,7 @@ struct_args.multinom <- function(fit, state, x, group, ...) {
     if (length(group_name_allowed) == 0) {
       stop("Grouping is not possible for this model!")
     }
-    group_name <- group_name_allowed[which(group_name %in% group_name_allowed)][1]
+    group_name <- group_name_allowed[which(group_name == group_name_allowed)][1]
     if (is.na(group_name)) {
       stop(paste0("Invalid group name! Should be one of (", paste(group_name_allowed, collapse = ", "), ")."))
     }
