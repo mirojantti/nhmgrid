@@ -25,28 +25,20 @@ manual_struct <- function(state, x, group = NULL, prob, ...) {
 #'
 #' @param fit
 #' The model object.
-#' @param x \[`character(1) or list(name, values = NULL)`\]\cr
-#' Either the name of the column to be used as the x-axis or
-#' a named list of the column name and the desired x values.
-#' See 'Details'.
-#' @param state \[`character(1) or list(name, values = NULL)`\]\cr
-#' Either the name of the column that denotes the state of observations or
-#' a named list of the column name and the desired state values.
-#' See 'Details'.
-#' @param group \[`character(1) or list(name, values = NULL)`\]\cr
+#' @param x See 'See also'.
+#' @param state See 'See also'.
+#' @param group \[`character(1) or list(name, values)`\]\cr
 #' Either the name of the column to be used as the grouping variable or
 #' a named list of the column name and the desired grouping values.
 #' If `NULL`, the observations will not be grouped.
-#' See 'Details'.
 #' @param fixed_predictors \[`list()`\]\cr
 #' A named list of parameters to control the other predictors used in the model.
 #' @param interval \[`numeric(1)`\]\cr
-#' The level of confidence/credible interval.
-#' @param ...
-#' Ignored.
+#' The level of confidence/credible interval. Ignore at the moment.
+#' @param ... Ignored.
 #'
 #' @details
-#' Please view the 'Details' of a specific extended `struct` method.
+#' Please view the 'Details' of a specific extended `struct` method in 'See also'.
 #' All of the extension methods are listed in the 'See Also' section.
 #'
 #' @returns
@@ -75,9 +67,11 @@ struct <- function(fit,
 #' @inheritParams struct
 #' @param fit \[`nnet::multinom`\]\cr
 #' The model object. See [nnet::multinom()].
-#' @param x \[`character(1) or list(name, values)`\]\cr
-#' Either the name of the column to be used as the x-axis or
-#' a named list of the column name and the desired x values.
+#' @param x \[`list(name, values)`\]\cr
+#' A named list of the column name and the desired values.
+#' See 'Details'.
+#' @param state \[`character()`\]\cr
+#' A vector of the desired state values.
 #' See 'Details'.
 #'
 #' @details
@@ -135,10 +129,10 @@ struct.multinom <- function(fit,
 #' @inheritParams struct
 #' @param fit \[`dynamite::dynamitefit`\]\cr
 #' The model object. See [dynamite::dynamite()].
-#' @param x \[`character(1) or list(name = NULL, values)`\]\cr
-#' Either the name of the column to be used as the x-axis or
-#' a named list of the column name and the desired x values.
-#' See 'Details'.
+#' @param x \[`numeric()`\]\cr
+#' A vector of the desired x-axis values. See 'Details'.
+#' @param state \[`character()`\]\cr
+#' A vector of the desired state values. See 'Details'.
 #'
 #' @details
 #' Additional details...

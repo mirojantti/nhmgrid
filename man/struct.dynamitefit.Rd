@@ -7,7 +7,7 @@
 \method{struct}{dynamitefit}(
   fit,
   x = NULL,
-  state,
+  state = NULL,
   group = NULL,
   fixed_predictors = NULL,
   interval = NULL,
@@ -18,27 +18,22 @@
 \item{fit}{[\code{dynamite::dynamitefit}]\cr
 The model object. See \code{\link[dynamite:dynamite]{dynamite::dynamite()}}.}
 
-\item{x}{[\verb{character(1) or list(name = NULL, values)}]\cr
-Either the name of the column to be used as the x-axis or
-a named list of the column name and the desired x values.
-See 'Details'.}
+\item{x}{[\code{numeric()}]\cr
+A vector of the desired x-axis values. See 'Details'.}
 
-\item{state}{[\verb{character(1) or list(name, values = NULL)}]\cr
-Either the name of the column that denotes the state of observations or
-a named list of the column name and the desired state values.
-See 'Details'.}
+\item{state}{[\code{character()}]\cr
+A vector of the desired state values. See 'Details'.}
 
-\item{group}{[\verb{character(1) or list(name, values = NULL)}]\cr
+\item{group}{[\verb{character(1) or list(name, values)}]\cr
 Either the name of the column to be used as the grouping variable or
 a named list of the column name and the desired grouping values.
-If \code{NULL}, the observations will not be grouped.
-See 'Details'.}
+If \code{NULL}, the observations will not be grouped.}
 
 \item{fixed_predictors}{[\code{list()}]\cr
 A named list of parameters to control the other predictors used in the model.}
 
 \item{interval}{[\code{numeric(1)}]\cr
-The level of confidence/credible interval.}
+The level of confidence/credible interval. Ignore at the moment.}
 
 \item{...}{Ignored.}
 }

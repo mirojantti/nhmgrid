@@ -6,7 +6,7 @@
 \usage{
 struct(
   fit,
-  x,
+  x = NULL,
   state = NULL,
   group = NULL,
   fixed_predictors = NULL,
@@ -17,27 +17,20 @@ struct(
 \arguments{
 \item{fit}{The model object.}
 
-\item{x}{[\verb{character(1) or list(name, values = NULL)}]\cr
-Either the name of the column to be used as the x-axis or
-a named list of the column name and the desired x values.
-See 'Details'.}
+\item{x}{See 'See also'.}
 
-\item{state}{[\verb{character(1) or list(name, values = NULL)}]\cr
-Either the name of the column that denotes the state of observations or
-a named list of the column name and the desired state values.
-See 'Details'.}
+\item{state}{See 'See also'.}
 
-\item{group}{[\verb{character(1) or list(name, values = NULL)}]\cr
+\item{group}{[\verb{character(1) or list(name, values)}]\cr
 Either the name of the column to be used as the grouping variable or
 a named list of the column name and the desired grouping values.
-If \code{NULL}, the observations will not be grouped.
-See 'Details'.}
+If \code{NULL}, the observations will not be grouped.}
 
 \item{fixed_predictors}{[\code{list()}]\cr
 A named list of parameters to control the other predictors used in the model.}
 
 \item{interval}{[\code{numeric(1)}]\cr
-The level of confidence/credible interval.}
+The level of confidence/credible interval. Ignore at the moment.}
 
 \item{...}{Ignored.}
 }
@@ -55,7 +48,7 @@ Estimates the transition probabilities within groups over time using
 a Markov model.
 }
 \details{
-Please view the 'Details' of a specific extended \code{struct} method.
+Please view the 'Details' of a specific extended \code{struct} method in 'See also'.
 All of the extension methods are listed in the 'See Also' section.
 }
 \seealso{
