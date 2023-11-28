@@ -27,20 +27,28 @@ plot.struct <- function(x, ...) {
       ncol = n_states,
       nrow = n_states)
 
-  y_axis <- ggplot2::ggplot() +
-      ggplot2::ylab("transition probability") +
-    patchwork::plot_layout(widths = 0, heights = 0)
-  x_axis <- ggplot2::ggplot() +
-    ggplot2::xlab(x$x$name) +
-    patchwork::plot_layout(widths = 0, heights = 0)
+  y_axis <- do.call("fake_axis", args = list(y = "transition probability"))
+  x_axis <- do.call("fake_axis", args = list(x = x$x$name))
 
-  (((y_axis | pw) + patchwork::plot_layout(widths = c(0, 1))) / x_axis) +
-    patchwork::plot_layout(heights = c(1, 0)) +
+  layout <- "
+    BA
+    CC
+  "
+  result <- patchwork::wrap_elements(full = pw) + y_axis + x_axis +
+    patchwork::plot_layout(design = layout,
+                           widths = c(0, 1),
+                           heights = c(1, 0)) +
     patchwork::plot_annotation(
       title = "State transition probability matrix",
       subtitle = subtitle
     )
+  return(result)
+}
 
+fake_axis <- function(...) {
+  return(ggplot2::ggplot() +
+           ggplot2::labs(...) +
+           patchwork::plot_layout(widths = 0, heights = 0))
 }
 
 #' TODO document
