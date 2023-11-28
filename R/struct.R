@@ -218,12 +218,14 @@ struct.dynamitefit <- function(fit,
     ]
   }
 
-  return(manual_struct(
+  struct <- manual_struct(
     state = state,
     x = x,
     group = group,
     prob = prob
-  ))
+  )
+  attr(struct, "fixed_predictors") <- fixed_predictors
+  return(struct)
 }
 
 struct_args <- function(fit, ...) {
