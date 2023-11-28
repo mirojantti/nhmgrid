@@ -109,7 +109,7 @@ struct.multinom <- function(fit,
   try(new_data[, names(fixed_predictors) := NULL], silent = TRUE)
 
   prob <- new_data[rep(1:.N, each = ncol(p))]
-  colnames(prob) <- c("x", "from", "group")
+  colnames(prob) <- stats::na.omit(c("x", "from", ifelse(!is.null(args$group), "group", NA)))
   prob[, c("to", "mean") := list(rep(colnames(p), times = nrow(new_data)), c(t(p)))]
 
   struct <- manual_struct(
