@@ -278,7 +278,7 @@ struct_args.multinom <- function(fit, state, x, group, ...) {
     }
     group_values_allowed <- unlist(fit$xlevels[group_name], use.names = FALSE)
     if (!is.null(group_values)) {
-      group_values <- group_values_allowed[which(group_values %in% group_values_allowed)]
+      group_values <- group_values[which(group_values %in% group_values_allowed)]
     } else {
       group_values <- group_values_allowed
     }
@@ -347,7 +347,7 @@ struct_args.dynamitefit <- function(fit, state, x, group, ...) {
     }
     group_values_allowed <- stats::na.omit(unique(fit$data[[group_name]]))
     if (!is.null(group_values)) {
-      group_values <- group_values_allowed[which(group_values %in% group_values_allowed)]
+      group_values <- group_values[which(group_values %in% group_values_allowed)]
     } else {
       group_values <- group_values_allowed
     }
