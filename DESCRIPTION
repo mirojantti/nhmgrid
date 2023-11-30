@@ -18,4 +18,5 @@ Depends:
     data.table
 Imports:
     ggplot2,
-    patchwork
+    patchwork,
+    methods

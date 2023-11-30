@@ -4,10 +4,12 @@
 \alias{plot.struct}
 \title{TODO document}
 \usage{
-\method{plot}{struct}(x, ...)
+\method{plot}{struct}(x, fun_cell = identity, ...)
 }
 \arguments{
 \item{x}{description}
+
+\item{fun_cell}{description}
 
 \item{...}{description}
 }

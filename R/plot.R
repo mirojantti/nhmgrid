@@ -1,10 +1,12 @@
 #' TODO document
 #'
 #' @param x description
+#' @param fun_cell description
 #' @param ... description
 #'
+#' @importFrom methods formalArgs
 #' @export
-plot.struct <- function(x, ...) {
+plot.struct <- function(x, fun_cell = identity, ...) {
   n_states <- length(x$state$values)
   n_cases <- n_states * n_states
   n_groups <- orElse(length(x$group$values), 0)
@@ -20,7 +22,31 @@ plot.struct <- function(x, ...) {
   pw <- Reduce(`+`, lapply(1:n_cases, \(i) {
     gx <- ifelse(i %% n_states != 0, i %% n_states, n_states)
     gy <- floor((i - 1) / n_states) + 1
-    plot_cell(x, gx, gy)
+    cell <- plot_cell(x, gx, gy)
+    if (!is.function(fun_cell)) {
+      warning("Argument `fun_cell` isn't a function! Ignoring `fun_cell`.")
+      return(cell)
+    }
+    attr(cell, "is_gradu_cell") <- TRUE
+    n_args <- length(methods::formalArgs(fun_cell))
+    if (n_args == 0) {
+      warning("Method `fun_cell` needs at least one argument for the cell! Ignoring `fun_cell`.")
+      return(cell)
+    }
+    args <- list(cell)
+    if (n_args > 1) {
+      args[2] <- i
+      if (n_args > 2) {
+        warning("Method `fun_cell` has more than 2 arguments! Ignoring the extra.")
+        args[3:n_args] <- NA
+      }
+    }
+    cell_modified <- do.call(fun_cell, args = args)
+    if (!("is_gradu_cell" %in% names(attributes(cell_modified)))) {
+      warning("Method `fun_cell` doesn't return the modified cell! Ignoring `fun_cell`.")
+      return(cell)
+    }
+    return(cell_modified)
   })) +
     patchwork::plot_layout(
       guides = "collect",
