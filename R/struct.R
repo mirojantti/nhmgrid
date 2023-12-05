@@ -1,6 +1,175 @@
 # "struct" is a temporary name for the structure that holds the necessary
 # data to plot the transition probabilities
 
+is_dynamitefit <- function(model) {
+  return("dynamitefit" %in% class(model))
+}
+
+find_data <- function(model) {
+  if (is_dynamitefit(model)) {
+    data <- model$data
+    data <- data[, !(grepl("^.+_lag\\d+$", colnames(data))), with = FALSE]
+    data <- data.table::copy(data)
+    response <- find_response(model)
+    data[, c(response$name) := list(response$values[1])]
+    return(data)
+  }
+  predictors <- unlist(insight::find_predictors(model), use.names = FALSE)
+  data <- insight::get_data(model)[, predictors]
+  data <- data.table::as.data.table(data)
+  return(data)
+}
+
+find_response <- function(model) {
+  if (is_dynamitefit(model)) {
+    name <- model$dformulas$all[[1]]$response
+    levels <- levels(model$data[[name]])
+    return(list(name = name, values = levels))
+  }
+  name <- insight::find_response(model)[1]
+  levels <- levels(insight::get_data(model)[[name]])
+  return(list(name = name, values = levels))
+}
+
+find_column_name <- function(data, values) {
+  values <- unique(values)
+  values <- values[order(values)]
+  for (col in colnames(data)) {
+    col_values <- unique(data[[col]])
+    col_values <- col_values[order(col_values)]
+    if (all(values == col_values)) {
+      return(col)
+    }
+  }
+  stop("Couldn't find a matching column!")
+}
+
+estimate_probs <- function(model, new_data, x, group, lag_state, interval) {
+  if (is_dynamitefit(model)) {
+    return(estimate_probs.dynamitefit(model, new_data, x, group, interval))
+  }
+
+  p <- marginaleffects::avg_predictions(
+    model = model,
+    newdata = new_data,
+    by = c(x, group, lag_state),
+    conf_level = interval,
+  ) |> data.table::as.data.table()
+
+  p[, c("std.error", "statistic", "p.value", "s.value") := NULL]
+
+  setnames(p,
+           old = c("group", x, orElse(group, ""), lag_state, "estimate", "conf.low", "conf.high"),
+           new = c("to", "x", "group", "from", "mean", "lower", "upper"),
+           skip_absent = TRUE)
+
+  if (is.null(group)) {
+    p[, "group" := list(NA)]
+  }
+
+  p <- p[, .(x, group, from, to, mean, lower, upper)]
+  return(p)
+}
+
+estimate_probs.dynamitefit <- function(model, new_data, x, group, interval) {
+  alpha <- 1 - interval
+  response <- find_response(model)
+  prob <- NULL
+  for (s in response$values) {
+    new_data[, response$name := list(s)]
+
+    p <- stats::na.omit(stats::fitted(model, newdata = new_data, df = FALSE))[
+      ,
+      as.list(unlist(lapply(.SD, \(q) list(
+        mean = mean(q),
+        quantile = stats::quantile(q, c(alpha / 2, 1 - (alpha / 2)), names = FALSE)
+      )))),
+      .SDcols = 1:length(response$values),
+      by = c(x, group)
+    ]
+
+    data.table::setnames(
+      p,
+      old = c(x, orElse(group, "")),
+      new = c("x", "group"),
+      skip_absent = TRUE
+    )
+
+    p <- data.table::melt(
+      p,
+      id = NULL,
+      measure.vars = patterns(".+\\.mean$", ".+\\.quantile1$", ".+\\.quantile2$"),
+      value.name = c("mean", "lower", "upper"),
+      variable.name = "to"
+      )[, to := response$values[to]]
+    p[, from := list(s)]
+    if (is.null(prob)) {
+      prob <- p
+    } else {
+      prob <- rbind(prob, p)
+    }
+  }
+  return(prob)
+}
+
+unique_or_mean <- function(q, data, x) {
+  u <- unique(q)
+  if (length(u) > 10) {
+    col <- find_column_name(data, q)
+    if (col != x) {
+      warning(paste0("Column `", col, "` has too many unique values! Defaulting to mean. Use `variables` to define specific values."))
+      return(mean(q, na.rm = TRUE))
+    }
+  }
+  return(u)
+}
+
+#' @export
+state_probs <- function(model,
+                       x = NULL,
+                       group = NULL,
+                       variables = NULL,
+                       lag_state = NULL,
+                       interval = 0.95) {
+  variables <- orElse(variables, list())
+
+  fit_data <- find_data(model)
+  response <- find_response(model)
+
+  datagrid_args <- list(
+    newdata = fit_data,
+    FUN_character = unique,
+    FUN_factor = unique,
+    FUN_logical = unique,
+    FUN_numeric = \(q) unique_or_mean(q, fit_data, x),
+    FUN_integer = \(q) unique_or_mean(q, fit_data, x),
+    FUN_other = unique
+  )
+  if (is_dynamitefit(model)) {
+    variables[[model$group_var]] <- fit_data[[model$group_var]][1]
+  }
+  datagrid_args <- c(datagrid_args, variables)
+
+  new_data <- do.call(marginaleffects::datagrid, args = datagrid_args) |>
+    data.table::as.data.table()
+  if (is_dynamitefit(model)) {
+    new_data <- new_data[order(new_data[[x]])]
+    n <- table(new_data[[x]])[1]
+    new_data[, c(model$group_var) := as.factor(rep(-(1:n), l = .N))]
+  }
+  View(new_data)
+
+  prob <- estimate_probs(model, new_data, x, group, lag_state, interval)
+
+  struct <- manual_struct(
+    state = response,
+    x = list(name = x, values = c()),
+    group = if (is.null(group)) NULL else list(name = group, values = c()),
+    prob = prob
+  )
+  return(struct)
+
+}
 
 #' TODO document
 #'
@@ -16,346 +185,4 @@ manual_struct <- function(state, x, group = NULL, prob, ...) {
   s <- list(state = state, x = x, group = group, prob = prob)
   class(s) <- "struct"
   return(s)
-}
-
-#' A generic method to estimate transition probabilities.
-#'
-#' Estimates the transition probabilities within groups over time using
-#' a Markov model.
-#'
-#' @param fit
-#' The model object.
-#' @param x See 'See also'.
-#' @param state See 'See also'.
-#' @param group \[`character(1) or list(name, values)`\]\cr
-#' Either the name of the column to be used as the grouping variable or
-#' a named list of the column name and the desired grouping values.
-#' If `NULL`, the observations will not be grouped.
-#' @param fixed_predictors \[`list()`\]\cr
-#' A named list of parameters to control the other predictors used in the model.
-#' @param interval \[`numeric(1)`\]\cr
-#' The level of confidence/credible interval. Ignore at the moment.
-#' @param ... Ignored.
-#'
-#' @details
-#' Please view the 'Details' of a specific extended `struct` method in 'See also'.
-#' All of the extension methods are listed in the 'See Also' section.
-#'
-#' @returns
-#' A `struct` object which is a list containing the following components:
-#' * `state`\cr A list of the state variable name and values.
-#' * `x`\cr A list of the x-axis variable name and values.
-#' * `group`\cr A list of the grouping variable name and values.
-#' * `prob`\cr A `data.table` object of the transition probabilities between the states.
-#'
-#' @family struct
-#' @export
-struct <- function(fit,
-                   x = NULL,
-                   state = NULL,
-                   group = NULL,
-                   fixed_predictors = NULL,
-                   interval = NULL,
-                   ...) {
-  UseMethod("struct")
-}
-
-#' Estimate transition probabilities using a `multinom` Markov model.
-#'
-#' @inherit struct description
-#'
-#' @inheritParams struct
-#' @param fit \[`nnet::multinom`\]\cr
-#' The model object. See [nnet::multinom()].
-#' @param x \[`list(name, values)`\]\cr
-#' A named list of the column name and the desired values.
-#' See 'Details'.
-#' @param state \[`character()`\]\cr
-#' A vector of the desired state values.
-#' See 'Details'.
-#'
-#' @details
-#' Additional details...
-#'
-#' @inherit struct return
-#' @family struct
-#' @import data.table
-#' @export
-struct.multinom <- function(fit,
-                            x,
-                            state = NULL,
-                            group = NULL,
-                            fixed_predictors = NULL,
-                            interval = NULL,
-                            ...) {
-  args <- struct_args(fit, state, x, group)
-
-  new_data <- eval(parse(text = paste0(
-    "data.table::CJ(",
-    args$x$name, "=", expression(args$x$values),
-    ", ", args$state$name, "=", expression(args$state$values),
-    if (!is.null(args$group))
-      paste0(", ", args$group$name, "=", expression(args$group$values)),
-    if (!is.null(fixed_predictors))
-      paste0(", ", paste0(
-        names(fixed_predictors), "=",
-        lapply(fixed_predictors, deparse), collapse = ", ")
-      ),
-    ")"
-  )))
-
-  p <- stats::predict(fit, type = "probs", newdata = new_data)
-
-  try(new_data[, names(fixed_predictors) := NULL], silent = TRUE)
-
-  prob <- new_data[rep(1:.N, each = ncol(p))]
-  colnames(prob) <- stats::na.omit(c("x", "from", ifelse(!is.null(args$group), "group", NA)))
-  prob[, c("to", "mean") := list(rep(colnames(p), times = nrow(new_data)), c(t(p)))]
-
-  struct <- manual_struct(
-    state = args$state,
-    x = args$x,
-    group = args$group,
-    prob = prob
-  )
-  attr(struct, "fixed_predictors") <- fixed_predictors
-  return(struct)
-}
-
-#' Estimate transition probabilities using a `dynamitefit` Markov model.
-#'
-#' @inherit struct description
-#'
-#' @inheritParams struct
-#' @param fit \[`dynamite::dynamitefit`\]\cr
-#' The model object. See [dynamite::dynamite()].
-#' @param x \[`numeric()`\]\cr
-#' A vector of the desired x-axis values. See 'Details'.
-#' @param state \[`character()`\]\cr
-#' A vector of the desired state values. See 'Details'.
-#'
-#' @details
-#' Additional details...
-#'
-#' @inherit struct return
-#' @family struct
-#' @import data.table
-#' @export
-struct.dynamitefit <- function(fit,
-                               x = NULL,
-                               state = NULL,
-                               group = NULL,
-                               fixed_predictors = NULL,
-                               interval = NULL,
-                               ...) {
-  args <- struct_args(fit, state, x, group)
-
-  n_states <- length(args$state$values)
-
-  prob <- data.table::CJ(
-    x = args$x$values[-1],
-    group = orElse(args$group$values, NA),
-    from = args$state$values,
-    to = args$state$values,
-    mean = 0, lower = 0, upper = 0
-  )
-
-  if (is.null(args$group)) {
-    prob[, group := NULL]
-  }
-
-  has_random <- any(grepl("(\\s|~)+random\\s*\\(", fit$call))
-  new_data <- unique(stats::na.omit(fit$data)[, c(fit$group_var, args$group$name), with = FALSE])
-  if (!has_random) {
-    if (!is.null(args$group)) {
-      new_data <- unique(new_data, by = args$group$name)
-    } else {
-      new_data <- new_data[1]
-    }
-  }
-
-  n_new_data <- nrow(new_data)
-  new_data <- new_data[rep(1:.N, each = length(args$x$values))]
-  new_data <- new_data[, args$x$name := rep(args$x$values, n_new_data)]
-
-  try(new_data[, names(fixed_predictors) := fixed_predictors], silent = TRUE)
-
-  for (s in args$state$values) {
-    new_data[, args$state$name := list(s)]
-
-    p <- stats::na.omit(stats::fitted(fit, newdata = new_data, df = FALSE))[
-      ,
-      as.list(unlist(lapply(.SD, \(q) list(
-        mean = mean(q),
-        quantile = stats::quantile(q, c(0.025, 0.975), names = FALSE)
-      )))),
-      .SDcols = 1:n_states,
-      by = c(args$x$name, args$group$name)
-    ]
-
-    data.table::setnames(p, c(args$x$name, orElse(args$group$name, "")), c("x", "group"), skip_absent = TRUE)
-
-    p <- data.table::melt(
-      p,
-      id = NULL,
-      measure.vars = patterns(".+\\.mean$", ".+\\.quantile1$", ".+\\.quantile2$"),
-      value.name = c("mean", "lower", "upper"),
-      variable.name = "to"
-      )[, to := args$state$values[to]]
-    p[, from := list(s)]
-    prob[
-      p,
-      c("mean", "lower", "upper") := list(i.mean, i.lower, i.upper),
-      on = stats::na.omit(c("x", ifelse(!is.null(args$group), "group", NA), "from", "to"))
-    ]
-  }
-
-  struct <- manual_struct(
-    state = args$state,
-    x = args$x,
-    group = args$group,
-    prob = prob
-  )
-  attr(struct, "fixed_predictors") <- fixed_predictors
-  return(struct)
-}
-
-struct_args <- function(fit, ...) {
-  UseMethod("struct_args")
-}
-
-struct_args.multinom <- function(fit, state, x, group, ...) {
-  args <- list(state = NULL, x = NULL, group = NULL)
-
-  state_name <- names(which(sapply(fit$xlevels, \(x) all(x %in% fit$lab))))[1]
-  state_values_allowed <- fit$xlevels[[state_name]]
-  state_values <- optional(unlist(state$values, use.names = FALSE))
-  if (is.null(state_values) && is.vector(state)) {
-    state_values <- state[which(state %in% state_values_allowed)]
-  }
-  state_values <- orElse(state_values, state_values_allowed)
-
-  if (length(state_values) == 0) {
-    stop(paste0("Invalid state values! Should be a subset of (", paste(state_values_allowed, collapse = ", "), ")."))
-  }
-  args$state = list(name = state_name, values = state_values)
-
-  if (!is.list(x) || !all(c("name", "values") %in% names(x))) {
-    stop("Argument `x` should be a named list(name, values)!")
-  }
-
-  x_name_allowed <- attr(fit$terms, "term.labels")
-  x_name <- x_name_allowed[which(x$name == x_name_allowed)][1]
-  if (is.na(x_name)) {
-    stop(paste0("Invalid x name! Should be one of (", paste(x_name_allowed, collapse = ", "), ")."))
-  }
-  x_values <- unlist(x$values, use.names = FALSE)
-  if (!is.vector(x_values) || length(x_values) <= 1) {
-    stop("Invalid x values! Should be a vector with length > 1.")
-  }
-  args$x = list(name = x_name, values = x_values)
-
-  if (!is.null(group)) {
-    if (is.list(group)) {
-      if (!all(c("name", "values") %in% names(group))) {
-        stop("Argument `group` should be a named list(name, values)!")
-      }
-      group_name <- group$name
-      group_values <- unlist(group$values, use.names = FALSE)
-    } else if (is.character(group) && length(group) == 1) {
-      group_name <- group[1]
-      group_values <- NULL
-    } else {
-        stop("Argument `group` should be a named list(name, values)!")
-    }
-    group_name_allowed <- names(fit$xlevels)[-which(args$state$name == names(fit$xlevels))]
-    if (length(group_name_allowed) == 0) {
-      stop("Grouping is not possible for this model!")
-    }
-    group_name <- group_name_allowed[which(group_name == group_name_allowed)][1]
-    if (is.na(group_name)) {
-      stop(paste0("Invalid group name! Should be one of (", paste(group_name_allowed, collapse = ", "), ")."))
-    }
-    group_values_allowed <- unlist(fit$xlevels[group_name], use.names = FALSE)
-    if (!is.null(group_values)) {
-      group_values <- group_values[which(group_values %in% group_values_allowed)]
-    } else {
-      group_values <- group_values_allowed
-    }
-    if (length(group_values) <= 1) {
-      stop(paste0("Invalid group values! Should be a subset (length > 1) of (", paste(group_values_allowed, collapse = ", "), ")."))
-    }
-    args$group = list(name = group_name, values = group_values)
-  }
-
-  return(args)
-}
-
-struct_args.dynamitefit <- function(fit, state, x, group, ...) {
-  args <- list(state = NULL, x = NULL, group = NULL)
-
-  state_name <- fit$dformulas$all[[1]]$response
-  state_values_allowed <- unique(levels(fit$data[[state_name]]))
-  state_values <- optional(unlist(state$values, use.names = FALSE))
-  if (is.null(state_values) && is.vector(state)) {
-    state_values <- state[which(state %in% state_values_allowed)]
-  }
-  state_values <- orElse(state_values, state_values_allowed)
-
-  if (length(state_values) == 0) {
-    stop(paste0("Invalid state values! Should be a subset of (", paste(state_values_allowed, collapse = ", "), ")."))
-  }
-  args$state = list(name = state_name, values = state_values)
-
-  x_name <- fit$time_var
-  x_range_allowed <- range(fit$data[[x_name]])
-  x_values <- optional(unlist(x$values, use.names = FALSE))
-  if (is.null(x_values) && is.vector(x)) {
-    x_values <- x[which(x_range_allowed[1] <= x & x <= x_range_allowed[2])]
-  }
-  x_values <- orElse(x_values, x_range_allowed[1]:x_range_allowed[2])
-  if (length(x_values) == 0) {
-    stop(paste0("Invalid x values! Should be within range (", paste(x_range_allowed, collapse = ", "), ")."))
-  }
-  args$x = list(name = x_name, values = x_values)
-
-  if (!is.null(group)) {
-    if (is.list(group)) {
-      if (!all(c("name", "values") %in% names(group))) {
-        stop("Argument `group` should be a named list(name, values)!")
-      }
-      group_name <- group$name
-      group_values <- unlist(group$values, use.names = FALSE)
-    } else if (is.character(group) && length(group) == 1) {
-      group_name <- group[1]
-      group_values <- NULL
-    } else {
-        stop("Argument `group` should be a named list(name, values)!")
-    }
-    data_cols <- colnames(fit$data)
-    group_name_allowed <- data_cols[-which(
-        grepl(paste0("^", args$state$name, "(_lag\\d+)?$"), data_cols) |
-          fit$time_var == data_cols |
-          fit$group_var == data_cols
-    )]
-    if (length(group_name_allowed) == 0) {
-      stop("Grouping is not possible for this model!")
-    }
-    group_name <- group_name_allowed[which(group_name == group_name_allowed)][1]
-    if (is.na(group_name)) {
-      stop(paste0("Invalid group name! Should be one of (", paste(group_name_allowed, collapse = ", "), ")."))
-    }
-    group_values_allowed <- stats::na.omit(unique(fit$data[[group_name]]))
-    if (!is.null(group_values)) {
-      group_values <- group_values[which(group_values %in% group_values_allowed)]
-    } else {
-      group_values <- group_values_allowed
-    }
-    if (length(group_values) <= 1) {
-      stop(paste0("Invalid group values! Should be a subset (length > 1) of (", paste(group_values_allowed, collapse = ", "), ")."))
-    }
-    args$group = list(name = group_name, values = group_values)
-  }
-
-  return(args)
 }
