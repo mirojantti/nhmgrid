@@ -131,10 +131,31 @@ state_probs <- function(model,
                        variables = NULL,
                        lag_state = NULL,
                        interval = 0.95) {
-  variables <- orElse(variables, list())
+
+  if (!is.list(variables)) {
+    if (!is.null(variables)) {
+      stop("Argument `variables` value is not a list!")
+    }
+    variables <- list()
+  }
 
   fit_data <- find_data(model)
   response <- find_response(model)
+
+  if (!is_dynamitefit(model)) {
+    lag_state_allowed <- unlist(fit_data[, lapply(.SD, \(c) all(response$values %in% unique(c)))])
+    lag_state_allowed <- names(lag_state_allowed[which(lag_state_allowed)])
+    if (length(lag_state_allowed) == 0) {
+      stop("None of the model predictors appear to represent the lagged state!")
+    }
+    if (is.null(lag_state)) {
+      lag_state <- lag_state_allowed[1]
+    } else if (!(lag_state %in% lag_state_allowed)) {
+      stop(paste0("Argument `lag_state` value should probably be one of (",
+                  paste0(lag_state_allowed, collapse = ", "),
+                  ")!"))
+    }
+  }
 
   datagrid_args <- list(
     newdata = fit_data,
@@ -157,7 +178,6 @@ state_probs <- function(model,
     n <- table(new_data[[x]])[1]
     new_data[, c(model$group_var) := as.factor(rep(-(1:n), l = .N))]
   }
-  View(new_data)
 
   prob <- estimate_probs(model, new_data, x, group, lag_state, interval)
 
