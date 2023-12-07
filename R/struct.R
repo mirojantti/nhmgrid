@@ -15,19 +15,25 @@ find_data <- function(model) {
     return(data)
   }
   predictors <- unlist(insight::find_predictors(model), use.names = FALSE)
-  data <- insight::get_data(model)[, predictors]
-  data <- data.table::as.data.table(data)
+  data <- insight::get_data(model)
+  if (is.data.table(data)) {
+    data <- data[, predictors, with = FALSE] |> data.table::copy()
+  } else {
+    data <- data[, predictors] |> data.table::as.data.table()
+  }
   return(data)
 }
 
 find_response <- function(model) {
   if (is_dynamitefit(model)) {
     name <- model$dformulas$all[[1]]$response
-    levels <- levels(model$data[[name]])
+    values <- levels(model$data[[name]])
+    levels <- orElse(levels(values), unique(values))
     return(list(name = name, values = levels))
   }
   name <- insight::find_response(model)[1]
-  levels <- levels(insight::get_data(model)[[name]])
+  values <- insight::get_data(model)[[name]]
+  levels <- orElse(levels(values), unique(values))
   return(list(name = name, values = levels))
 }
 
@@ -37,8 +43,10 @@ find_column_name <- function(data, values) {
   for (col in colnames(data)) {
     col_values <- unique(data[[col]])
     col_values <- col_values[order(col_values)]
-    if (all(values == col_values)) {
-      return(col)
+    if (length(values) == length(col_values)) {
+      if (all(values == col_values)) {
+        return(col)
+      }
     }
   }
   stop("Couldn't find a matching column!")
@@ -189,6 +197,33 @@ state_probs <- function(model,
   )
   return(struct)
 
+}
+
+#' @export
+as.struct <- function(x, ...) {
+  UseMethod("as.struct")
+}
+
+#' @export
+as.struct.array <- function(x, ...) {
+  prob <- data.table::as.data.table(x)
+  setnames(prob, c("from", "to", "x", "mean"))
+  prob[, c("from", "to") := list(
+    factor(stringi::stri_replace_all(from, "", regex = "(^\\[| ->\\]$)")),
+    factor(stringi::stri_replace_all(to, "", regex = "(^\\[-> |\\]$)"))
+  )]
+  if (!is.numeric(prob$x)) {
+    prob[, x := factor(x)]
+  }
+  state_values <- levels(prob$from)
+  x_values <- order(unique(x))
+  struct <- manual_struct(
+    state = list(name = "state", values = state_values),
+    x = list(name = "x", values = x_values),
+    group = NULL,
+    prob = prob
+  )
+  return(struct)
 }
 
 #' TODO document

@@ -116,13 +116,13 @@ plot_cell <- function(struct, gx, gy) {
   cell_data <- struct$prob[to == state_to & struct$prob$from == state_from]
   ggplot2::ggplot(
     data = cell_data,
-    mapping = ggplot2::aes(x = cell_data$x)
+    mapping = ggplot2::aes(x = cell_data$x, group = orElse(cell_data$group, 1))
   ) +
     (if (all(c("lower", "upper") %in% colnames(cell_data))) {
       if (!is.null(struct$group)) {
-        ggplot2::geom_ribbon(ggplot2::aes(ymin = lower, ymax = upper, fill = group), alpha = 0.25)
+        ggplot2::geom_ribbon(ggplot2::aes(group = NULL, ymin = lower, ymax = upper, fill = group), alpha = 0.25)
       } else {
-        ggplot2::geom_ribbon(ggplot2::aes(ymin = lower, ymax = upper), alpha = 0.25)
+        ggplot2::geom_ribbon(ggplot2::aes(group = NULL, ymin = lower, ymax = upper), alpha = 0.25)
       }
     }) +
     (if (!is.null(struct$group)) {

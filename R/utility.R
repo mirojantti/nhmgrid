@@ -10,3 +10,8 @@ orElse <- function(x, errorValue) {
 optional <- function(x) {
   return(orElse(x, NULL))
 }
+
+nth <- function(x) {
+  u <- unique(x)
+  return(sapply(x, \(i) which(i == u)))
+}
