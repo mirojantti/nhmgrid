@@ -200,23 +200,70 @@ state_probs <- function(model,
 }
 
 #' @export
+state_rates <- function(data, id, state, x) {
+  if (is.data.table(data)) {
+    data <- data.table::copy(data)
+  } else {
+    data <- data.table::as.data.table(data)
+  }
+
+  if (is.factor(data[[state]])) {
+    state_values <- sort(levels(data[[state]]))
+  } else {
+    state_values <- sort(unique(data[[state]]))
+  }
+  x_values <- unique(data[[x]])
+  if (!is.factor(data[[x]])) {
+    x_values <- sort(x_values)
+  }
+
+  prob <- data.table::CJ(
+    from = state_values,
+    to = state_values,
+    x = x_values,
+    mean = 0
+  )
+
+  data[, "$lagstate$" := shift(c(state)), by = c(id)]
+  setnames(data, old = c(state, x), new = c("$state$", "$x$"))
+
+  f <- data[!is.na(`$lagstate$`), .(`$n_from$` = .N), by = c("$x$", "$lagstate$")]
+  d <- data[f, .(`$n_to$` = .N), by = c("$x$", "$state$", "$lagstate$"), on = c("$x$", "$lagstate$")]
+  prob_sub <- f[d, .(from = `$lagstate$`, to = `$state$`, x = `$x$`, mean = `$n_to$` / `$n_from$`), on = c("$x$", "$lagstate$")]
+  prob[prob_sub, mean := i.mean, on = .(from, to, x)]
+
+  prob <- prob[x != x_values[1], ]
+
+  struct <- manual_struct(
+    state = list(name = state, values = state_values),
+    x = list(name = "x", values = x_values),
+    group = NULL,
+    prob = prob
+  )
+  return(struct)
+}
+
+#' @export
 as.struct <- function(x, ...) {
   UseMethod("as.struct")
 }
 
 #' @export
 as.struct.array <- function(x, ...) {
-  prob <- data.table::as.data.table(x)
+  prob <- data.table::as.data.table(x, sorted = FALSE)
   setnames(prob, c("from", "to", "x", "mean"))
   prob[, c("from", "to") := list(
     factor(stringi::stri_replace_all(from, "", regex = "(^\\[| ->\\]$)")),
     factor(stringi::stri_replace_all(to, "", regex = "(^\\[-> |\\]$)"))
   )]
   if (!is.numeric(prob$x)) {
-    prob[, x := factor(x)]
+    prob[, x := factor(x, levels = unique(x))]
   }
-  state_values <- levels(prob$from)
-  x_values <- order(unique(x))
+  state_values <- unique(prob$from)
+  x_values <- unique(prob$x)
+  if (is.numeric(prob$x)) {
+    x_values <- sort(x_values)
+  }
   struct <- manual_struct(
     state = list(name = "state", values = state_values),
     x = list(name = "x", values = x_values),
