@@ -250,6 +250,11 @@ as.struct <- function(x, ...) {
 
 #' @export
 as.struct.array <- function(x, ...) {
+  d <- dim(x)
+  if (length(d) != 3 || diff(d[1:2]) != 0) {
+    stop("`as.struct.array` works only for objects created by TraMineR::seqtrate function with argument `time.varying` set to true!")
+  }
+
   prob <- data.table::as.data.table(x, sorted = FALSE)
   setnames(prob, c("from", "to", "x", "mean"))
   prob[, c("from", "to") := list(
