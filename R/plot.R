@@ -116,7 +116,7 @@ plot_cell <- function(struct, gx, gy) {
   cell_data <- struct$prob[to == state_to & struct$prob$from == state_from]
   ggplot2::ggplot(
     data = cell_data,
-    mapping = ggplot2::aes(x = cell_data$x, group = orElse(cell_data$group, 1))
+    mapping = ggplot2::aes(y = mean, x = cell_data$x, group = orElse(cell_data$group, 1))
   ) +
     (if (all(c("lower", "upper") %in% colnames(cell_data))) {
       if (!is.null(struct$group)) {
@@ -126,9 +126,9 @@ plot_cell <- function(struct, gx, gy) {
       }
     }) +
     (if (!is.null(struct$group)) {
-      ggplot2::geom_line(ggplot2::aes(y = mean, color = cell_data$group))
+      ggplot2::geom_line(ggplot2::aes(color = cell_data$group))
     } else {
-      ggplot2::geom_line(ggplot2::aes(y = mean))
+      ggplot2::geom_line(ggplot2::aes())
     }) +
     settings
 }
