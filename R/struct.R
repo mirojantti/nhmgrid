@@ -200,7 +200,7 @@ state_probs <- function(model,
 }
 
 #' @export
-state_rates <- function(data, id, state, x) {
+state_rates <- function(data, id, state, x, group = NULL) {
   if (is.data.table(data)) {
     data <- data.table::copy(data)
   } else {
@@ -212,6 +212,7 @@ state_rates <- function(data, id, state, x) {
   } else {
     state_values <- sort(unique(data[[state]]))
   }
+
   x_values <- unique(data[[x]])
   if (!is.factor(data[[x]])) {
     x_values <- sort(x_values)
@@ -221,23 +222,29 @@ state_rates <- function(data, id, state, x) {
     from = state_values,
     to = state_values,
     x = x_values,
+    group = orElse(unique(data[[group]]), NA),
     mean = 0
   )
 
   data[, "$lagstate$" := shift(c(state)), by = c(id)]
-  setnames(data, old = c(state, x), new = c("$state$", "$x$"))
+  data[, "$group$" := orElse(data[[group]], list(NA))]
+  setnames( data, old = c(state, x), new = c("$state$", "$x$"))
 
-  f <- data[!is.na(`$lagstate$`), .(`$n_from$` = .N), by = c("$x$", "$lagstate$")]
-  d <- data[f, .(`$n_to$` = .N), by = c("$x$", "$state$", "$lagstate$"), on = c("$x$", "$lagstate$")]
-  prob_sub <- f[d, .(from = `$lagstate$`, to = `$state$`, x = `$x$`, mean = `$n_to$` / `$n_from$`), on = c("$x$", "$lagstate$")]
-  prob[prob_sub, mean := i.mean, on = .(from, to, x)]
+  g <- c("$x$", "$lagstate$")
+  if (!is.null(group)) {
+    g <- c(g, "$group$")
+  }
+  f <- data[!is.na(`$lagstate$`), .(`$n_from$` = .N), by = g]
+  t <- data[f, .(`$n_to$` = .N), by = c("$state$", g), on = g]
+  prob_sub <- f[t, .(from = `$lagstate$`, to = `$state$`, x = `$x$`, group = orElse(`$group$`, NA), mean = `$n_to$` / `$n_from$`), on = g]
+  prob[prob_sub, mean := i.mean, on = .(from, to, x, group)]
 
   prob <- prob[x != x_values[1], ]
 
   struct <- manual_struct(
     state = list(name = state, values = state_values),
     x = list(name = "x", values = x_values),
-    group = NULL,
+    group = if (is.null(group)) NULL else list(name = group, values = unique(data[[group]])),
     prob = prob
   )
   return(struct)
