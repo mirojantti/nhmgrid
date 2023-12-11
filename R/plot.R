@@ -23,7 +23,6 @@ plot.stprob <- function(x, fun_cell = identity, ...) {
   }
 
   pw <- Reduce(`+`, lapply(1:n_cases, \(i) {
-    print(paste0(i, "/", n_states^2))
     gx <- ifelse(i %% n_states != 0, i %% n_states, n_states)
     gy <- floor((i - 1) / n_states) + 1
     cell <- plot_cell(x, gx, gy)
@@ -50,7 +49,6 @@ plot.stprob <- function(x, fun_cell = identity, ...) {
       warning("Method `fun_cell` doesn't return the modified cell! Ignoring `fun_cell`.")
       return(cell)
     }
-    print(class(cell_modified))
     return(cell_modified)
   })) +
     patchwork::plot_layout(
