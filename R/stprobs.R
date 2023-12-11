@@ -130,6 +130,7 @@ unique_or_mean <- function(q, data, x) {
   return(u)
 }
 
+#' @import data.table
 #' @export
 state_probs <- function(model,
                         x = NULL,
@@ -202,6 +203,7 @@ state_probs <- function(model,
 
 }
 
+#' @import data.table
 #' @export
 state_props <- function(data, id, state, x, group = NULL) {
   if (is.data.table(data)) {
@@ -253,11 +255,13 @@ state_props <- function(data, id, state, x, group = NULL) {
   return(stprob)
 }
 
+#' @import data.table
 #' @export
 as.stprob <- function(x, ...) {
   UseMethod("as.stprob")
 }
 
+#' @import data.table
 #' @export
 as.stprob.array <- function(x, ...) {
   d <- dim(x)
@@ -296,6 +300,7 @@ as.stprob.array <- function(x, ...) {
 #' @param prob description
 #' @param ... description
 #'
+#' @import data.table
 #' @export
 manual_stprob <- function(state, x, group = NULL, prob, ...) {
   n <- length(x)

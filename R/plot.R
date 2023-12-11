@@ -5,6 +5,7 @@
 #' @param ... description
 #'
 #' @importFrom methods formalArgs
+#' @import data.table
 #' @export
 plot.stprob <- function(x, fun_cell = identity, ...) {
   n_states <- length(x$state$values)

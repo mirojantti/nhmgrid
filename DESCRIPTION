@@ -15,8 +15,8 @@ URL: https://github.com/joakim219/gradu
 BugReports: https://github.com/joakim219/gradu/issues
 Depends: 
     R (>= 2.10),
-    data.table
 Imports:
     ggplot2,
     patchwork,
-    methods
+    methods,
+    data.table
