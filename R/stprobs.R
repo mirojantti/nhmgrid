@@ -119,10 +119,11 @@ estimate_probs.dynamitefit <- function(model, new_data, x, group, interval) {
 
 unique_or_mean <- function(q, data, x) {
   u <- unique(q)
-  if (length(u) > 10) {
+  l <- length(u)
+  if (l > 10) {
     col <- find_column_name(data, q)
     if (col != x) {
-      warning(paste0("Column `", col, "` has too many unique values! Defaulting to mean. Use `variables` to define specific values."))
+      warning(paste0("Column `", col, "` has many unique values (", l, " > 10)! Defaulting to mean. Use argument `variables` to define specific values."))
       return(mean(q, na.rm = TRUE))
     }
   }
@@ -131,17 +132,22 @@ unique_or_mean <- function(q, data, x) {
 
 #' @export
 state_probs <- function(model,
-                       x = NULL,
-                       group = NULL,
-                       variables = NULL,
-                       lag_state = NULL,
-                       interval = 0.95) {
-
+                        x = NULL,
+                        group = NULL,
+                        variables = NULL,
+                        lag_state = NULL,
+                        interval = 0.95) {
   if (!is.list(variables)) {
     if (!is.null(variables)) {
       stop("Argument `variables` value is not a list!")
     }
     variables <- list()
+  }
+  if (!is.null(interval)) {
+    interval <- onlyIf(is.numeric(interval) && 0 <= interval && interval <= 1, interval)
+    if (is.null(interval)) {
+      warning("Argument `interval` should be a value between 0 and 1!")
+    }
   }
 
   fit_data <- find_data(model)
@@ -189,7 +195,7 @@ state_probs <- function(model,
   stprob <- manual_stprob(
     state = response,
     x = list(name = x, values = c()),
-    group = if (is.null(group)) NULL else list(name = group, values = c()),
+    group = onlyIf(!is.null(group), list(name = group, values = c())),
     prob = prob
   )
   return(stprob)
@@ -197,7 +203,7 @@ state_probs <- function(model,
 }
 
 #' @export
-state_rates <- function(data, id, state, x, group = NULL) {
+state_props <- function(data, id, state, x, group = NULL) {
   if (is.data.table(data)) {
     data <- data.table::copy(data)
   } else {
@@ -241,7 +247,7 @@ state_rates <- function(data, id, state, x, group = NULL) {
   stprob <- manual_stprob(
     state = list(name = state, values = state_values),
     x = list(name = "x", values = x_values),
-    group = if (is.null(group)) NULL else list(name = group, values = unique(data[[group]])),
+    group = onlyIf(!is.null(group), list(name = group, values = unique(data[[group]]))),
     prob = prob
   )
   return(stprob)
