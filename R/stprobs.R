@@ -1,6 +1,3 @@
-# "struct" is a temporary name for the structure that holds the necessary
-# data to plot the transition probabilities
-
 is_dynamitefit <- function(model) {
   return("dynamitefit" %in% class(model))
 }
@@ -189,13 +186,13 @@ state_probs <- function(model,
 
   prob <- estimate_probs(model, new_data, x, group, lag_state, interval)
 
-  struct <- manual_struct(
+  stprob <- manual_stprob(
     state = response,
     x = list(name = x, values = c()),
     group = if (is.null(group)) NULL else list(name = group, values = c()),
     prob = prob
   )
-  return(struct)
+  return(stprob)
 
 }
 
@@ -208,7 +205,7 @@ state_rates <- function(data, id, state, x, group = NULL) {
   }
 
   if (is.factor(data[[state]])) {
-    state_values <- sort(levels(data[[state]]))
+    state_values <- levels(data[[state]])
   } else {
     state_values <- sort(unique(data[[state]]))
   }
@@ -241,25 +238,25 @@ state_rates <- function(data, id, state, x, group = NULL) {
 
   prob <- prob[x != x_values[1], ]
 
-  struct <- manual_struct(
+  stprob <- manual_stprob(
     state = list(name = state, values = state_values),
     x = list(name = "x", values = x_values),
     group = if (is.null(group)) NULL else list(name = group, values = unique(data[[group]])),
     prob = prob
   )
-  return(struct)
+  return(stprob)
 }
 
 #' @export
-as.struct <- function(x, ...) {
-  UseMethod("as.struct")
+as.stprob <- function(x, ...) {
+  UseMethod("as.stprob")
 }
 
 #' @export
-as.struct.array <- function(x, ...) {
+as.stprob.array <- function(x, ...) {
   d <- dim(x)
   if (length(d) != 3 || diff(d[1:2]) != 0) {
-    stop("`as.struct.array` works only for objects created by TraMineR::seqtrate function with argument `time.varying` set to true!")
+    stop("`as.stprob.array` works only for objects created with TraMineR::seqtrate function with argument `time.varying` set to true!")
   }
 
   prob <- data.table::as.data.table(x, sorted = FALSE)
@@ -276,13 +273,13 @@ as.struct.array <- function(x, ...) {
   if (is.numeric(prob$x)) {
     x_values <- sort(x_values)
   }
-  struct <- manual_struct(
+  stprob <- manual_stprob(
     state = list(name = "state", values = state_values),
     x = list(name = "x", values = x_values),
     group = NULL,
     prob = prob
   )
-  return(struct)
+  return(stprob)
 }
 
 #' TODO document
@@ -294,9 +291,9 @@ as.struct.array <- function(x, ...) {
 #' @param ... description
 #'
 #' @export
-manual_struct <- function(state, x, group = NULL, prob, ...) {
+manual_stprob <- function(state, x, group = NULL, prob, ...) {
   n <- length(x)
   s <- list(state = state, x = x, group = group, prob = prob)
-  class(s) <- "struct"
+  class(s) <- "stprob"
   return(s)
 }
