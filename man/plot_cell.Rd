@@ -4,10 +4,10 @@
 \alias{plot_cell}
 \title{TODO document}
 \usage{
-plot_cell(struct, gx, gy)
+plot_cell(stprob, gx, gy)
 }
 \arguments{
-\item{struct}{description}
+\item{stprob}{description}
 
 \item{gx}{description}
 

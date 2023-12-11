@@ -6,7 +6,7 @@
 #'
 #' @importFrom methods formalArgs
 #' @export
-plot.struct <- function(x, fun_cell = identity, ...) {
+plot.stprob <- function(x, fun_cell = identity, ...) {
   n_states <- length(x$state$values)
   n_cases <- n_states * n_states
   n_groups <- orElse(length(x$group$values), 0)
@@ -79,13 +79,13 @@ fake_axis <- function(...) {
 
 #' TODO document
 #'
-#' @param struct description
+#' @param stprob description
 #' @param gx description
 #' @param gy description
 #'
-plot_cell <- function(struct, gx, gy) {
-  state_from <- struct$state$values[gy]
-  state_to <- struct$state$values[gx]
+plot_cell <- function(stprob, gx, gy) {
+  state_from <- stprob$state$values[gy]
+  state_to <- stprob$state$values[gx]
   settings <- list(
     ggplot2::labs(
       x = NULL,
@@ -93,13 +93,13 @@ plot_cell <- function(struct, gx, gy) {
       subtitle = if(gy == 1) state_to else NULL
     ),
     ggplot2::scale_y_continuous(limits = c(0, 1)),
-    ggplot2::scale_color_discrete(name = struct$group$name),
-    ggplot2::scale_fill_discrete(name = struct$group$name),
+    ggplot2::scale_color_discrete(name = stprob$group$name),
+    ggplot2::scale_fill_discrete(name = stprob$group$name),
     ggplot2::theme(
       plot.subtitle = ggplot2::element_text(hjust = 0.5)
     )
   )
-  if(gy != length(struct$state$values)) {
+  if(gy != length(stprob$state$values)) {
     settings[[length(settings) + 1]] <- ggplot2::theme(
       axis.text.x = ggplot2::element_blank(),
       axis.ticks.x = ggplot2::element_blank()
@@ -112,11 +112,11 @@ plot_cell <- function(struct, gx, gy) {
     )
   }
 
-  cell_data <- struct$prob[to == state_to & struct$prob$from == state_from]
+  cell_data <- stprob$prob[to == state_to & stprob$prob$from == state_from]
 
   draw_interval <- all(c("lower", "upper") %in% colnames(cell_data))
 
-  group_optional <- onlyIf(!is.null(struct$group), "group")
+  group_optional <- onlyIf(!is.null(stprob$group), "group")
 
   ggplot2::ggplot(
     data = cell_data,
