@@ -112,23 +112,24 @@ plot_cell <- function(struct, gx, gy) {
     )
   }
 
-
   cell_data <- struct$prob[to == state_to & struct$prob$from == state_from]
+
+  draw_interval <- all(c("lower", "upper") %in% colnames(cell_data))
+
+  group_optional <- onlyIf(!is.null(struct$group), "group")
+
   ggplot2::ggplot(
     data = cell_data,
     mapping = ggplot2::aes(y = mean, x = cell_data$x, group = orElse(cell_data$group, 1))
   ) +
-    (if (all(c("lower", "upper") %in% colnames(cell_data))) {
-      if (!is.null(struct$group)) {
-        ggplot2::geom_ribbon(ggplot2::aes(group = NULL, ymin = lower, ymax = upper, fill = group), alpha = 0.25)
-      } else {
-        ggplot2::geom_ribbon(ggplot2::aes(group = NULL, ymin = lower, ymax = upper), alpha = 0.25)
-      }
-    }) +
-    (if (!is.null(struct$group)) {
-      ggplot2::geom_line(ggplot2::aes(color = cell_data$group))
-    } else {
-      ggplot2::geom_line(ggplot2::aes())
-    }) +
+    onlyIf(draw_interval,
+           ggplot2::geom_ribbon(ggplot2::aes(
+             group = NULL,
+             ymin = lower,
+             ymax = upper,
+             fill = optional(.data[[group_optional]])),
+             alpha = 0.25
+           )) +
+    ggplot2::geom_line(ggplot2::aes(color = optional(.data[[group_optional]]))) +
     settings
 }

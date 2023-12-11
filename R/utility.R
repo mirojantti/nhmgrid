@@ -15,3 +15,14 @@ nth <- function(x) {
   u <- unique(x)
   return(sapply(x, \(i) which(i == u)))
 }
+
+nonNull <- function(x) {
+  return(Filter(Negate(is.null), x))
+}
+
+onlyIf <- function(cond, x) {
+  if (cond) {
+    return(x)
+  }
+  return(NULL)
+}
