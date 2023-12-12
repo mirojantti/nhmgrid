@@ -1,3 +1,185 @@
+
+#' @import data.table
+#' @export
+stprobs <- function(model,
+                    x = NULL,
+                    group = NULL,
+                    variables = NULL,
+                    lag_state = NULL,
+                    interval = 0.95) {
+  if (!is.list(variables)) {
+    if (!is.null(variables)) {
+      stop("Argument `variables` value is not a list!")
+    }
+    variables <- list()
+  }
+  if (!is.null(interval)) {
+    interval <- onlyIf(is.numeric(interval) && 0 <= interval && interval <= 1, interval)
+    if (is.null(interval)) {
+      warning("Argument `interval` should be a value between 0 and 1!")
+    }
+  }
+
+  fit_data <- find_data(model)
+  response <- find_response(model)
+
+  if (!is_dynamitefit(model)) {
+    lag_state_allowed <- unlist(fit_data[, lapply(.SD, \(c) all(response$values %in% unique(c)))])
+    lag_state_allowed <- names(lag_state_allowed[which(lag_state_allowed)])
+    if (length(lag_state_allowed) == 0) {
+      stop("None of the model predictors appear to represent the lagged state!")
+    }
+    if (is.null(lag_state)) {
+      lag_state <- lag_state_allowed[1]
+    } else if (!(lag_state %in% lag_state_allowed)) {
+      stop(paste0("Argument `lag_state` value should probably be one of (",
+                  paste0(lag_state_allowed, collapse = ", "),
+                  ")!"))
+    }
+  }
+
+  datagrid_args <- list(
+    newdata = fit_data,
+    FUN_character = unique,
+    FUN_factor = unique,
+    FUN_logical = unique,
+    FUN_numeric = \(q) unique_or_mean(q, fit_data, x),
+    FUN_integer = \(q) unique_or_mean(q, fit_data, x),
+    FUN_other = unique
+  )
+  if (is_dynamitefit(model)) {
+    variables[[model$group_var]] <- fit_data[[model$group_var]][1]
+  }
+  datagrid_args <- c(datagrid_args, variables)
+
+  new_data <- do.call(marginaleffects::datagrid, args = datagrid_args) |>
+    data.table::as.data.table()
+  if (is_dynamitefit(model)) {
+    new_data <- new_data[order(new_data[[x]])]
+    n <- table(new_data[[x]])[1]
+    new_data[, c(model$group_var) := as.factor(rep(-(1:n), l = .N))]
+  }
+
+  prob <- estimate_probs(model, new_data, x, group, lag_state, interval)
+
+  stprob <- manual_stprob(
+    state = response,
+    x = list(name = x, values = c()),
+    group = onlyIf(!is.null(group), list(name = group, values = c())),
+    prob = prob
+  )
+  attr(stprob, "proportions") <- FALSE
+  return(stprob)
+
+}
+
+#' @import data.table
+#' @export
+stprops <- function(data, id, state, x, group = NULL) {
+  if (is.data.table(data)) {
+    data <- data.table::copy(data)
+  } else {
+    data <- data.table::as.data.table(data)
+  }
+
+  if (is.factor(data[[state]])) {
+    state_values <- levels(data[[state]])
+  } else {
+    state_values <- sort(unique(data[[state]]))
+  }
+
+  x_values <- unique(data[[x]])
+  if (!is.factor(data[[x]])) {
+    x_values <- sort(x_values)
+  }
+
+  prob <- data.table::CJ(
+    from = state_values,
+    to = state_values,
+    x = x_values,
+    group = orElse(unique(data[[group]]), NA),
+    mean = 0
+  )
+
+  data[, "$lagstate$" := shift(c(state)), by = c(id)]
+  data[, "$group$" := orElse(data[[group]], list(NA))]
+  setnames( data, old = c(state, x), new = c("$state$", "$x$"))
+
+  g <- c("$x$", "$lagstate$")
+  if (!is.null(group)) {
+    g <- c(g, "$group$")
+  }
+  f <- data[!is.na(`$lagstate$`), .(`$n_from$` = .N), by = g]
+  t <- data[f, .(`$n_to$` = .N), by = c("$state$", g), on = g]
+  prob_sub <- f[t, .(from = `$lagstate$`, to = `$state$`, x = `$x$`, group = orElse(`$group$`, NA), mean = `$n_to$` / `$n_from$`), on = g]
+  prob[prob_sub, mean := i.mean, on = .(from, to, x, group)]
+
+  prob <- prob[x != x_values[1], ]
+
+  stprob <- manual_stprob(
+    state = list(name = state, values = state_values),
+    x = list(name = "x", values = x_values),
+    group = onlyIf(!is.null(group), list(name = group, values = unique(data[[group]]))),
+    prob = prob
+  )
+  attr(stprob, "proportions") <- TRUE
+  return(stprob)
+}
+
+#' @import data.table
+#' @export
+as.stprob <- function(x, ...) {
+  UseMethod("as.stprob")
+}
+
+#' @import data.table
+#' @export
+as.stprob.array <- function(x, ...) {
+  d <- dim(x)
+  if (length(d) != 3 || diff(d[1:2]) != 0) {
+    stop("`as.stprob.array` works only for objects created with TraMineR::seqtrate function with argument `time.varying` set to true!")
+  }
+
+  prob <- data.table::as.data.table(x, sorted = FALSE)
+  setnames(prob, c("from", "to", "x", "mean"))
+  prob[, c("from", "to") := list(
+    factor(stringi::stri_replace_all(from, "", regex = "(^\\[| ->\\]$)")),
+    factor(stringi::stri_replace_all(to, "", regex = "(^\\[-> |\\]$)"))
+  )]
+  if (!is.numeric(prob$x)) {
+    prob[, x := factor(x, levels = unique(x))]
+  }
+  state_values <- unique(prob$from)
+  x_values <- unique(prob$x)
+  if (is.numeric(prob$x)) {
+    x_values <- sort(x_values)
+  }
+  stprob <- manual_stprob(
+    state = list(name = "state", values = state_values),
+    x = list(name = "x", values = x_values),
+    group = NULL,
+    prob = prob
+  )
+  return(stprob)
+}
+
+#' TODO document
+#'
+#' @param state description
+#' @param x description
+#' @param group description
+#' @param prob description
+#' @param ... description
+#'
+#' @import data.table
+#' @export
+manual_stprob <- function(state, x, group = NULL, prob, ...) {
+  n <- length(x)
+  s <- list(state = state, x = x, group = group, prob = prob)
+  class(s) <- "stprob"
+  return(s)
+}
+
 is_dynamitefit <- function(model) {
   return("dynamitefit" %in% class(model))
 }
@@ -128,183 +310,4 @@ unique_or_mean <- function(q, data, x) {
     }
   }
   return(u)
-}
-
-#' @import data.table
-#' @export
-state_probs <- function(model,
-                        x = NULL,
-                        group = NULL,
-                        variables = NULL,
-                        lag_state = NULL,
-                        interval = 0.95) {
-  if (!is.list(variables)) {
-    if (!is.null(variables)) {
-      stop("Argument `variables` value is not a list!")
-    }
-    variables <- list()
-  }
-  if (!is.null(interval)) {
-    interval <- onlyIf(is.numeric(interval) && 0 <= interval && interval <= 1, interval)
-    if (is.null(interval)) {
-      warning("Argument `interval` should be a value between 0 and 1!")
-    }
-  }
-
-  fit_data <- find_data(model)
-  response <- find_response(model)
-
-  if (!is_dynamitefit(model)) {
-    lag_state_allowed <- unlist(fit_data[, lapply(.SD, \(c) all(response$values %in% unique(c)))])
-    lag_state_allowed <- names(lag_state_allowed[which(lag_state_allowed)])
-    if (length(lag_state_allowed) == 0) {
-      stop("None of the model predictors appear to represent the lagged state!")
-    }
-    if (is.null(lag_state)) {
-      lag_state <- lag_state_allowed[1]
-    } else if (!(lag_state %in% lag_state_allowed)) {
-      stop(paste0("Argument `lag_state` value should probably be one of (",
-                  paste0(lag_state_allowed, collapse = ", "),
-                  ")!"))
-    }
-  }
-
-  datagrid_args <- list(
-    newdata = fit_data,
-    FUN_character = unique,
-    FUN_factor = unique,
-    FUN_logical = unique,
-    FUN_numeric = \(q) unique_or_mean(q, fit_data, x),
-    FUN_integer = \(q) unique_or_mean(q, fit_data, x),
-    FUN_other = unique
-  )
-  if (is_dynamitefit(model)) {
-    variables[[model$group_var]] <- fit_data[[model$group_var]][1]
-  }
-  datagrid_args <- c(datagrid_args, variables)
-
-  new_data <- do.call(marginaleffects::datagrid, args = datagrid_args) |>
-    data.table::as.data.table()
-  if (is_dynamitefit(model)) {
-    new_data <- new_data[order(new_data[[x]])]
-    n <- table(new_data[[x]])[1]
-    new_data[, c(model$group_var) := as.factor(rep(-(1:n), l = .N))]
-  }
-
-  prob <- estimate_probs(model, new_data, x, group, lag_state, interval)
-
-  stprob <- manual_stprob(
-    state = response,
-    x = list(name = x, values = c()),
-    group = onlyIf(!is.null(group), list(name = group, values = c())),
-    prob = prob
-  )
-  return(stprob)
-
-}
-
-#' @import data.table
-#' @export
-state_props <- function(data, id, state, x, group = NULL) {
-  if (is.data.table(data)) {
-    data <- data.table::copy(data)
-  } else {
-    data <- data.table::as.data.table(data)
-  }
-
-  if (is.factor(data[[state]])) {
-    state_values <- levels(data[[state]])
-  } else {
-    state_values <- sort(unique(data[[state]]))
-  }
-
-  x_values <- unique(data[[x]])
-  if (!is.factor(data[[x]])) {
-    x_values <- sort(x_values)
-  }
-
-  prob <- data.table::CJ(
-    from = state_values,
-    to = state_values,
-    x = x_values,
-    group = orElse(unique(data[[group]]), NA),
-    mean = 0
-  )
-
-  data[, "$lagstate$" := shift(c(state)), by = c(id)]
-  data[, "$group$" := orElse(data[[group]], list(NA))]
-  setnames( data, old = c(state, x), new = c("$state$", "$x$"))
-
-  g <- c("$x$", "$lagstate$")
-  if (!is.null(group)) {
-    g <- c(g, "$group$")
-  }
-  f <- data[!is.na(`$lagstate$`), .(`$n_from$` = .N), by = g]
-  t <- data[f, .(`$n_to$` = .N), by = c("$state$", g), on = g]
-  prob_sub <- f[t, .(from = `$lagstate$`, to = `$state$`, x = `$x$`, group = orElse(`$group$`, NA), mean = `$n_to$` / `$n_from$`), on = g]
-  prob[prob_sub, mean := i.mean, on = .(from, to, x, group)]
-
-  prob <- prob[x != x_values[1], ]
-
-  stprob <- manual_stprob(
-    state = list(name = state, values = state_values),
-    x = list(name = "x", values = x_values),
-    group = onlyIf(!is.null(group), list(name = group, values = unique(data[[group]]))),
-    prob = prob
-  )
-  return(stprob)
-}
-
-#' @import data.table
-#' @export
-as.stprob <- function(x, ...) {
-  UseMethod("as.stprob")
-}
-
-#' @import data.table
-#' @export
-as.stprob.array <- function(x, ...) {
-  d <- dim(x)
-  if (length(d) != 3 || diff(d[1:2]) != 0) {
-    stop("`as.stprob.array` works only for objects created with TraMineR::seqtrate function with argument `time.varying` set to true!")
-  }
-
-  prob <- data.table::as.data.table(x, sorted = FALSE)
-  setnames(prob, c("from", "to", "x", "mean"))
-  prob[, c("from", "to") := list(
-    factor(stringi::stri_replace_all(from, "", regex = "(^\\[| ->\\]$)")),
-    factor(stringi::stri_replace_all(to, "", regex = "(^\\[-> |\\]$)"))
-  )]
-  if (!is.numeric(prob$x)) {
-    prob[, x := factor(x, levels = unique(x))]
-  }
-  state_values <- unique(prob$from)
-  x_values <- unique(prob$x)
-  if (is.numeric(prob$x)) {
-    x_values <- sort(x_values)
-  }
-  stprob <- manual_stprob(
-    state = list(name = "state", values = state_values),
-    x = list(name = "x", values = x_values),
-    group = NULL,
-    prob = prob
-  )
-  return(stprob)
-}
-
-#' TODO document
-#'
-#' @param state description
-#' @param x description
-#' @param group description
-#' @param prob description
-#' @param ... description
-#'
-#' @import data.table
-#' @export
-manual_stprob <- function(state, x, group = NULL, prob, ...) {
-  n <- length(x)
-  s <- list(state = state, x = x, group = group, prob = prob)
-  class(s) <- "stprob"
-  return(s)
 }
