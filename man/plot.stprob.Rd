@@ -2,17 +2,72 @@
 % Please edit documentation in R/plot.R
 \name{plot.stprob}
 \alias{plot.stprob}
-\title{TODO document}
+\title{Plot State Transition Probabilities}
 \usage{
-\method{plot}{stprob}(x, fun_cell = identity, ...)
+\method{plot}{stprob}(
+  x,
+  fun_cell = identity,
+  title = NULL,
+  subtitle = NULL,
+  x_label = NULL,
+  y_label = NULL,
+  ...
+)
 }
 \arguments{
-\item{x}{description}
+\item{x}{[\code{gradu::stprob}]\cr
+The \code{stprob} object containing the transition probabilities.}
 
-\item{fun_cell}{description}
+\item{fun_cell}{[\verb{function(cell, index)}]\cr
+The function to apply to the individual plots. By default, \link{identity} is
+used. See 'Details' and 'Examples'.}
 
-\item{...}{description}
+\item{title}{[\code{character(1)}]\cr
+Title for the plot. If explicitly set to \code{NULL}, no title is used.}
+
+\item{subtitle}{[\code{character(1)}]\cr
+Subtitle for the plot.}
+
+\item{x_label}{[\code{character(1)}]\cr
+Label for the x-axis. If explicitly set to \code{NULL}, no label is used.}
+
+\item{y_label}{[\code{character(1)}]\cr
+Label for the y-axis. If explicitly set to \code{NULL}, no label is used.}
+
+\item{...}{Ignored.}
 }
 \description{
-TODO document
+Plot State Transition Probabilities
+}
+\details{
+The function defined in \code{fun_cell} is applied to all cells of the plot matrix
+individually. The function should be defined with 1 or 2 arguments and it
+should return the modified plot. The first argument is assigned the original
+plot object obtained with \link[ggplot2:ggplot]{ggplot2::ggplot}. If the second argument is
+defined, it contains the index of the cell in the plot matrix. See 'Examples'.
+}
+\examples{
+\dontshow{if (FALSE) (if (getRversion() >= "3.4") withAutoprint else force)(\{ # examplesIf}
+# Estimate state transition probabilities in the health data and plot them
+fit <- nnet::multinom(state ~ lagstate + age, gradu::health)
+probs <- gradu::stprobs(fit, x = "age")
+plot(probs)
+
+# Calculate state transition proportions
+props <- gradu::stprops(gradu::health, "id", "state", "age")
+plot(props)
+
+# The argument `fun_cell` can be used to customize the individual cells
+
+# One could add a smoothing lines in all of the plots
+plot(props, fun_cell = \(cell) cell + ggplot2::geom_smooth())
+
+# or only in a specific cell by using a 2 argument function
+plot(props, fun_cell = \(cell, index) {
+  if (index == 5) {
+    return(cell + ggplot2::geom_smooth())
+  }
+  return(cell)
+})
+\dontshow{\}) # examplesIf}
 }

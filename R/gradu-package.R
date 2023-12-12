@@ -1,6 +1,7 @@
 utils::globalVariables(c(
   "x", "group", "from", "to", "mean", "lower", "upper", "i.mean", "i.lower",
-  "i.upper", "patterns"
+  "i.upper", "patterns", "$group$", "$lagstate$", "$n_from$", "$n_to$",
+  "$state$", "$x$", ".", "x_name", "group_name", "state_name", "state_values"
 ))
 
 
@@ -11,8 +12,9 @@ utils::globalVariables(c(
 #' over time between groups.
 #'
 #' # See also
-#' * [struct()] for information on estimating transition probabilities.
-#' * [plot.struct()] for information on plotting the probabilities.
+#' * [stprobs] for information on estimating state transition probabilities.
+#' * [stprops] for information on calculating state transition proportions.
+#' * [plot.stprob] for information on plotting the probabilities.
 #' * \href{https://github.com/joakim219/gradu/issues/}{Submit a bug report or a feature request}
 #'
 #' @docType package

@@ -1,4 +1,46 @@
-
+#' State Transition Probabilities
+#'
+#' Estimate state transition probabilities for given Markov model.
+#'
+#' @param model The model object.
+#' @param x \[`character(1)`\]\cr
+#' The predictor name in `model` which represents time.
+#' @param group \[`character(1)`\]\cr
+#' The predictor name in `model` which to group the observations by. If `NULL`,
+#' the observations will not be grouped.
+#' @param variables \[`list()`\]\cr
+#' A named list containing desired predictor values to use when estimating the
+#' probabilities. See 'Details'.
+#' @param lag_state \[`character(1)`\]\cr
+#' The predictor name in `model` which represents lagged states. This should
+#' only be supplied if automatic detection fails.
+#' @param interval \[`numeric(1)`\]\cr
+#' The confidence/credibility interval.
+#'
+#' @details
+#' By default, all unique predictor values are marginalized. However, unique
+#' numeric predictor values are used in marginalization only if the length of
+#' unique values are no more than 10. In case there are more than 10 unique
+#' numeric values, only the mean of the original values are used in the
+#' estimation. This limitation can be circumvented by supplying the desired
+#' values using the `variables` argument.
+#'
+#' @returns
+#' A `stprob` object containing the estimated state transition probabilities.
+#'
+#' @examplesIf FALSE
+#' # Fit a multinomial logistic regression model
+#' fit <- nnet::multinom(state ~ lagstate + age + sex, gradu::health)
+#'
+#' # Plot the transition probabilities separately for male and female
+#' probs <- gradu::stprobs(fit, x = "age", group = "sex")
+#' plot(probs)
+#'
+#' # Plot the transition probabilities for males aged 15-40 years
+#' probs <- gradu::stprobs(fit, x = "age", variables = list(sex = "male", age = 15:40))
+#' plot(probs, subtitle = "sex=male")
+#'
+#' @importFrom nnet multinom
 #' @import data.table
 #' @export
 stprobs <- function(model,
@@ -63,9 +105,10 @@ stprobs <- function(model,
   prob <- estimate_probs(model, new_data, x, group, lag_state, interval)
 
   stprob <- manual_stprob(
-    state = response,
-    x = list(name = x, values = c()),
-    group = onlyIf(!is.null(group), list(name = group, values = c())),
+    state_name = response$name,
+    state_values = response$values,
+    x_name = x,
+    group_name = group,
     prob = prob
   )
   attr(stprob, "proportions") <- FALSE
@@ -73,6 +116,36 @@ stprobs <- function(model,
 
 }
 
+#' State Transition Proportions
+#'
+#' Calculate state transition proportions for given data.
+#'
+#' @param data The data object.
+#' @param id \[`character(1)`\]\cr
+#' The column name in `data` which represents individual identifiers.
+#' @param state \[`character(1)`\]\cr
+#' The column name in `data` which represents states.
+#' @param x \[`character(1)`\]\cr
+#' The column name in `data` which represents time.
+#' @param group \[`character(1)`\]\cr
+#' The column name in `data` which to group the observations by. If `NULL`, the
+#' observations will not be grouped.
+#'
+#' @returns
+#' A `stprob` object containing the calculated state transition proportions.
+#'
+#' @examplesIf FALSE
+#' # Data structure
+#' str(gradu::health)
+#'
+#' # Calculate and plot empirical transition probabilities
+#' props <- gradu::stprops(gradu::health, "id", "state", "age")
+#' plot(props)
+#'
+#' # Group by sex
+#' props <- gradu::stprops(gradu::health, "id", "state", "age", "sex")
+#' plot(props)
+#'
 #' @import data.table
 #' @export
 stprops <- function(data, id, state, x, group = NULL) {
@@ -117,21 +190,33 @@ stprops <- function(data, id, state, x, group = NULL) {
   prob <- prob[x != x_values[1], ]
 
   stprob <- manual_stprob(
-    state = list(name = state, values = state_values),
-    x = list(name = "x", values = x_values),
-    group = onlyIf(!is.null(group), list(name = group, values = unique(data[[group]]))),
+    state_name = state,
+    state_values = state_values,
+    x_name = "x",
+    group_name = group,
     prob = prob
   )
   attr(stprob, "proportions") <- TRUE
   return(stprob)
 }
 
-#' @import data.table
+#' Coerce an object to a `stprob` object
+#'
+#' Currently only works with objects obtained from [TraMineR::seqtrate].
+#'
+#' @param x The object.
+#' @param ... Ignored.
+#'
+#' @returns
+#' A `stprob` object containing the state transition probabilities.
+#'
 #' @export
 as.stprob <- function(x, ...) {
   UseMethod("as.stprob")
 }
 
+#' @describeIn as.stprob Convert the result of [TraMineR::seqtrate] to a
+#' `stprob` object.
 #' @import data.table
 #' @export
 as.stprob.array <- function(x, ...) {
@@ -150,32 +235,42 @@ as.stprob.array <- function(x, ...) {
     prob[, x := factor(x, levels = unique(x))]
   }
   state_values <- unique(prob$from)
-  x_values <- unique(prob$x)
-  if (is.numeric(prob$x)) {
-    x_values <- sort(x_values)
-  }
   stprob <- manual_stprob(
-    state = list(name = "state", values = state_values),
-    x = list(name = "x", values = x_values),
-    group = NULL,
+    state_name = "state",
+    state_values = state_values,
+    x_name = "x",
+    group_name = NULL,
     prob = prob
   )
   return(stprob)
 }
 
-#' TODO document
+#' Manual creation of a `stprob` object
 #'
-#' @param state description
-#' @param x description
-#' @param group description
-#' @param prob description
-#' @param ... description
+#' @param state_name \[`character(1)`\]\cr
+#' The name of the variable that denotes the state of observations.
+#' @param state_values \[`character() or integer()`\]\cr
+#' A vector of possible state values.
+#' @param x_name \[`character(1)`\]\cr
+#' The name of the variable that is used for the x-axis.
+#' @param group_name \[`character(1)`\]\cr
+#' The name of the variable that is used for grouping.
+#' @param prob \[`data.table or data.frame`\]\cr
+#' A data table/frame containing the state transition probabilities.
+#' See 'Details'.
 #'
-#' @import data.table
 #' @export
-manual_stprob <- function(state, x, group = NULL, prob, ...) {
-  n <- length(x)
-  s <- list(state = state, x = x, group = group, prob = prob)
+manual_stprob <- function(state_name,
+                          state_values,
+                          x_name,
+                          group_name = NULL,
+                          prob) {
+  stopifnot(all(c("x", "from", "to", "mean") %in% colnames(prob)))
+  s <- list(state_name = state_name,
+            state_values = state_values,
+            x_name = x_name,
+            group_name = group_name,
+            prob = prob)
   class(s) <- "stprob"
   return(s)
 }

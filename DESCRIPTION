@@ -19,4 +19,8 @@ Imports:
     ggplot2,
     patchwork,
     methods,
-    data.table
+    data.table,
+    insight,
+    marginaleffects,
+    stringi,
+    nnet

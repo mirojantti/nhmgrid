@@ -11,8 +11,9 @@ over time between groups.
 }
 \section{See also}{
 \itemize{
-\item \code{\link[=struct]{struct()}} for information on estimating transition probabilities.
-\item \code{\link[=plot.struct]{plot.struct()}} for information on plotting the probabilities.
+\item \link{stprobs} for information on estimating state transition probabilities.
+\item \link{stprops} for information on calculating state transition proportions.
+\item \link{plot.stprob} for information on plotting the probabilities.
 \item \href{https://github.com/joakim219/gradu/issues/}{Submit a bug report or a feature request}
 }
 }
