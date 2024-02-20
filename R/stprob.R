@@ -174,9 +174,9 @@ stprops <- function(data, id, state, x, group = NULL) {
     mean = 0
   )
 
-  data[, "$lagstate$" := shift(c(state)), by = c(id)]
-  data[, "$group$" := orElse(data[[group]], list(NA))]
   setnames(data, old = c(state, x), new = c("$state$", "$x$"))
+  data[, "$lagstate$" := shift(`$state$`), by = c(id)]
+  data[, "$group$" := orElse(data[[group]], list(NA))]
 
   g <- c("$x$", "$lagstate$")
   if (!is.null(group)) {
