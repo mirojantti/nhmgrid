@@ -58,11 +58,14 @@ plot.stprob <- function(x,
                         x_label = NULL,
                         y_label = NULL,
                         ...) {
-  n_states <- length(x$state_values)
-  n_cases <- n_states * n_states
-  #n_groups <- orElse(length(x$group_name), 0)
+  if (!("stprob" %in% class(x))) {
+    stop("The object to plot is not a `stprob` object!")
+  }
 
-  pw <- Reduce(`+`, lapply(1:n_cases, \(i) {
+  n_states <- length(unique(x$from))
+  n_cases <- n_states * n_states
+
+  pw <- Reduce(`+`, lapply(seq_len(n_cases), \(i) {
     gx <- ifelse(i %% n_states != 0, i %% n_states, n_states)
     gy <- floor((i - 1) / n_states) + 1
     cell <- plot_cell(x, gx, gy)
@@ -96,15 +99,15 @@ plot.stprob <- function(x,
       ncol = n_states,
       nrow = n_states)
 
-  prob_or_prop <- ifelse(isTRUE(attr(x, "proportions")), "proportion", "probability")
+  probp_full <- ifelse(attr(x, "pro(b|p)") == "b", "probability", "proportion")
   if (missing(y_label)) {
-    y_label <- orElse(y_label, paste("transition", prob_or_prop))
+    y_label <- orElse(y_label, paste("transition", probp_full))
   }
   if (missing(x_label)) {
-    x_label <- orElse(x_label, x$x_name)
+    x_label <- orElse(x_label, attr(x, "x_name"))
   }
   if (missing(title)) {
-    title <- orElse(title, paste("State transition", prob_or_prop, "matrix"))
+    title <- orElse(title, paste("State transition", probp_full, "matrix"))
   }
 
   y_axis <- do.call("fake_axis", args = list(y = y_label))
@@ -132,8 +135,16 @@ fake_axis <- function(...) {
 }
 
 plot_cell <- function(stprob, gx, gy) {
-  state_from <- stprob$state_values[gy]
-  state_to <- stprob$state_values[gx]
+  group <- attr(stprob, "group")
+  if (is.factor(stprob$from)) {
+    state_values <- levels(stprob$from)
+  } else {
+    state_values <- unique(stprob$from)
+  }
+  probp <- attr(stprob, "pro(b|p)")
+
+  state_from <- state_values[gy]
+  state_to <- state_values[gx]
   settings <- list(
     ggplot2::labs(
       x = NULL,
@@ -141,14 +152,14 @@ plot_cell <- function(stprob, gx, gy) {
       subtitle = onlyIf(gy == 1, bquote("" %->% .(state_to)))
     ),
     ggplot2::coord_cartesian(ylim = c(0, 1)),
-    ggplot2::scale_linetype_discrete(name = stprob$group_name),
-    ggplot2::scale_color_discrete(name = stprob$group_name),
-    ggplot2::scale_fill_discrete(name = stprob$group_name),
+    ggplot2::scale_linetype_discrete(name = group),
+    ggplot2::scale_color_discrete(name = group),
+    ggplot2::scale_fill_discrete(name = group),
     ggplot2::theme(
       plot.subtitle = ggplot2::element_text(hjust = 0.5)
     )
   )
-  if(gy != length(stprob$state_values)) {
+  if(gy != length(state_values)) {
     settings[[length(settings) + 1]] <- ggplot2::theme(
       axis.text.x = ggplot2::element_blank(),
       axis.ticks.x = ggplot2::element_blank()
@@ -161,11 +172,11 @@ plot_cell <- function(stprob, gx, gy) {
     )
   }
 
-  cell_data <- stprob$prob[to == state_to & stprob$prob$from == state_from]
+  cell_data <- stprob[to == state_to & stprob$from == state_from] # TODO from
 
   draw_interval <- all(c("lower", "upper") %in% colnames(cell_data))
 
-  group_optional <- onlyIf(!is.null(stprob$group), "group")
+  group_optional <- onlyIf(!is.null(group), "group")
 
   ggplot2::ggplot(
     data = cell_data,
@@ -183,11 +194,14 @@ plot_cell <- function(stprob, gx, gy) {
            ggplot2::geom_line(ggplot2::aes(y = lower, color = optional(.data[[group_optional]]), linetype = optional(.data[[group_optional]])), alpha = 0.25)) +
     onlyIf(draw_interval,
            ggplot2::geom_line(ggplot2::aes(y = upper, color = optional(.data[[group_optional]]), linetype = optional(.data[[group_optional]])), alpha = 0.25)) +
-    onlyIf(!isTRUE(attr(stprob, "proportions")),
+
+    onlyIf(probp == "b",
            ggplot2::geom_line(ggplot2::aes(color = optional(.data[[group_optional]]), linetype = optional(.data[[group_optional]])))) +
-    onlyIf(isTRUE(attr(stprob, "proportions")),
+
+    onlyIf(probp == "p",
            ggplot2::geom_segment(ggplot2::aes(xend = x, y = 0, yend = mean, color = optional(.data[[group_optional]])))) +
-    onlyIf(isTRUE(attr(stprob, "proportions")),
+    onlyIf(probp == "p",
            ggplot2::geom_point(ggplot2::aes(color = optional(.data[[group_optional]])))) +
+
     settings
 }

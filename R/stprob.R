@@ -103,15 +103,12 @@ stprobs <- function(model,
   }
 
   prob <- estimate_probs(model, new_data, x, group, lag_state, interval)
+  prob <- prob[order(x, match(from, response$values), match(to, response$values))]
 
-  stprob <- manual_stprob(
-    state_name = response$name,
-    state_values = response$values,
-    x_name = x,
-    group_name = group,
-    prob = prob
-  )
-  attr(stprob, "proportions") <- FALSE
+  stprob <- manual_stprob(prob)
+  attr(stprob, "pro(b|p)") <- "b"
+  attr(stprob, "x_name") <- x
+  attr(stprob, "group") <- group
   return(stprob)
 
 }
@@ -162,7 +159,7 @@ stprops <- function(data, id, state, x, group = NULL) {
   }
 
   x_values <- unique(data[[x]])
-  if (!is.factor(data[[x]])) {
+  if (!is.factor(data[[x]])) { # TODO sort only numeric?
     x_values <- sort(x_values)
   }
 
@@ -196,15 +193,12 @@ stprops <- function(data, id, state, x, group = NULL) {
   prob[m, mean := NA, on = .(from, x, group)]
 
   prob <- prob[x != x_values[1], ]
+  prob <- prob[order(x, match(from, state_values), match(to, state_values))]
 
-  stprob <- manual_stprob(
-    state_name = state,
-    state_values = state_values,
-    x_name = "x",
-    group_name = group,
-    prob = prob
-  )
-  attr(stprob, "proportions") <- TRUE
+  stprob <- manual_stprob(prob)
+  attr(stprob, "pro(b|p)") <- "p"
+  attr(stprob, "x_name") <- x
+  attr(stprob, "group") <- group
   return(stprob)
 }
 
@@ -243,13 +237,9 @@ as.stprob.array <- function(x, ...) {
     prob[, x := factor(x, levels = unique(x))]
   }
   state_values <- unique(prob$from)
-  stprob <- manual_stprob(
-    state_name = "state",
-    state_values = state_values,
-    x_name = "x",
-    group_name = NULL,
-    prob = prob
-  )
+  stprob <- manual_stprob(prob)
+  attr(stprob, "pro(b|p)") <- "p"
+  attr(stprob, "x_name") <- "x"
   return(stprob)
 }
 
@@ -268,19 +258,20 @@ as.stprob.array <- function(x, ...) {
 #' See 'Details'.
 #'
 #' @export
-manual_stprob <- function(state_name,
-                          state_values,
-                          x_name,
-                          group_name = NULL,
-                          prob) {
-  stopifnot(all(c("x", "from", "to", "mean") %in% colnames(prob)))
-  s <- list(state_name = state_name,
-            state_values = state_values,
-            x_name = x_name,
-            group_name = group_name,
-            prob = prob)
-  class(s) <- "stprob"
-  return(s)
+manual_stprob <- function(prob) {
+  stopifnot(
+    is.data.frame(prob),
+    all(c("x", "from", "to", "mean") %in% colnames(prob)),
+    is.numeric(prob$x),
+    is.numeric(prob$mean),
+    !("lower" %in% colnames(prob)) || is.numeric(prob$lower),
+    !("upper" %in% colnames(prob)) || is.numeric(prob$upper),
+    sum(c("lower", "upper") %in% colnames(prob)) %% 2 == 0
+  )
+
+  stprob <- data.table::as.data.table(prob)
+  class(stprob) <- c("stprob", class(stprob))
+  return(stprob)
 }
 
 is_dynamitefit <- function(model) {
