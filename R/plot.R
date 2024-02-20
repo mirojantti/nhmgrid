@@ -178,6 +178,11 @@ plot_cell <- function(stprob, gx, gy) {
              fill = optional(.data[[group_optional]])),
              alpha = 0.25
            )) +
-    ggplot2::geom_line(ggplot2::aes(color = optional(.data[[group_optional]]))) +
+    onlyIf(!isTRUE(attr(stprob, "proportions")),
+           ggplot2::geom_line(ggplot2::aes(color = optional(.data[[group_optional]])))) +
+    onlyIf(isTRUE(attr(stprob, "proportions")),
+           ggplot2::geom_segment(ggplot2::aes(xend = x, y = 0, yend = mean, color = optional(.data[[group_optional]])))) +
+    onlyIf(isTRUE(attr(stprob, "proportions")),
+           ggplot2::geom_point(ggplot2::aes(color = optional(.data[[group_optional]])))) +
     settings
 }

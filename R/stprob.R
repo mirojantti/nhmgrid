@@ -176,7 +176,7 @@ stprops <- function(data, id, state, x, group = NULL) {
 
   data[, "$lagstate$" := shift(c(state)), by = c(id)]
   data[, "$group$" := orElse(data[[group]], list(NA))]
-  setnames( data, old = c(state, x), new = c("$state$", "$x$"))
+  setnames(data, old = c(state, x), new = c("$state$", "$x$"))
 
   g <- c("$x$", "$lagstate$")
   if (!is.null(group)) {
@@ -184,8 +184,16 @@ stprops <- function(data, id, state, x, group = NULL) {
   }
   f <- data[!is.na(`$lagstate$`), .(`$n_from$` = .N), by = g]
   t <- data[f, .(`$n_to$` = .N), by = c("$state$", g), on = g]
-  prob_sub <- f[t, .(from = `$lagstate$`, to = `$state$`, x = `$x$`, group = orElse(`$group$`, NA), mean = `$n_to$` / `$n_from$`), on = g]
+  prob_sub <- f[t, .(from = `$lagstate$`,
+                     to = `$state$`,
+                     x = `$x$`,
+                     group = orElse(`$group$`, NA),
+                     mean = `$n_to$` / `$n_from$`),
+                on = g]
   prob[prob_sub, mean := i.mean, on = .(from, to, x, group)]
+
+  m <- prob[, .(`$missing$` = all(mean == 0)), by = .(from, x, group)][(`$missing$`)]
+  prob[m, mean := NA, on = .(from, x, group)]
 
   prob <- prob[x != x_values[1], ]
 
