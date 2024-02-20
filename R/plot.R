@@ -172,7 +172,7 @@ plot_cell <- function(stprob, gx, gy) {
     )
   }
 
-  cell_data <- stprob[to == state_to & stprob$from == state_from] # TODO from
+  cell_data <- stprob[to == state_to & from == state_from]
 
   draw_interval <- all(c("lower", "upper") %in% colnames(cell_data))
 

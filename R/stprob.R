@@ -159,7 +159,7 @@ stprops <- function(data, id, state, x, group = NULL) {
   }
 
   x_values <- unique(data[[x]])
-  if (!is.factor(data[[x]])) { # TODO sort only numeric?
+  if (!is.factor(data[[x]])) {
     x_values <- sort(x_values)
   }
 
@@ -262,7 +262,6 @@ manual_stprob <- function(prob) {
   stopifnot(
     is.data.frame(prob),
     all(c("x", "from", "to", "mean") %in% colnames(prob)),
-    is.numeric(prob$x),
     is.numeric(prob$mean),
     !("lower" %in% colnames(prob)) || is.numeric(prob$lower),
     !("upper" %in% colnames(prob)) || is.numeric(prob$upper),
@@ -270,6 +269,8 @@ manual_stprob <- function(prob) {
   )
 
   stprob <- data.table::as.data.table(prob)
+  stprob$from <- as.factor(stprob$from)
+  stprob$to <- as.factor(stprob$to)
   class(stprob) <- c("stprob", class(stprob))
   return(stprob)
 }
