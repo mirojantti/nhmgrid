@@ -137,8 +137,8 @@ plot_cell <- function(stprob, gx, gy) {
   settings <- list(
     ggplot2::labs(
       x = NULL,
-      y = if(gx == 1) state_from else NULL,
-      subtitle = if(gy == 1) state_to else NULL
+      y = onlyIf(gx == 1, bquote(.(state_from) %->% "")),
+      subtitle = onlyIf(gy == 1, bquote("" %->% .(state_to)))
     ),
     ggplot2::scale_y_continuous(limits = c(0, 1)),
     ggplot2::scale_color_discrete(name = stprob$group_name),
