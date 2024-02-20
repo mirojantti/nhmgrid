@@ -140,7 +140,8 @@ plot_cell <- function(stprob, gx, gy) {
       y = onlyIf(gx == 1, bquote(.(state_from) %->% "")),
       subtitle = onlyIf(gy == 1, bquote("" %->% .(state_to)))
     ),
-    ggplot2::scale_y_continuous(limits = c(0, 1)),
+    ggplot2::coord_cartesian(ylim = c(0, 1)),
+    ggplot2::scale_linetype_discrete(name = stprob$group_name),
     ggplot2::scale_color_discrete(name = stprob$group_name),
     ggplot2::scale_fill_discrete(name = stprob$group_name),
     ggplot2::theme(
@@ -176,10 +177,14 @@ plot_cell <- function(stprob, gx, gy) {
              ymin = lower,
              ymax = upper,
              fill = optional(.data[[group_optional]])),
-             alpha = 0.25
+           alpha = 0.25
            )) +
+    onlyIf(draw_interval,
+           ggplot2::geom_line(ggplot2::aes(y = lower, color = optional(.data[[group_optional]]), linetype = optional(.data[[group_optional]])), alpha = 0.25)) +
+    onlyIf(draw_interval,
+           ggplot2::geom_line(ggplot2::aes(y = upper, color = optional(.data[[group_optional]]), linetype = optional(.data[[group_optional]])), alpha = 0.25)) +
     onlyIf(!isTRUE(attr(stprob, "proportions")),
-           ggplot2::geom_line(ggplot2::aes(color = optional(.data[[group_optional]])))) +
+           ggplot2::geom_line(ggplot2::aes(color = optional(.data[[group_optional]]), linetype = optional(.data[[group_optional]])))) +
     onlyIf(isTRUE(attr(stprob, "proportions")),
            ggplot2::geom_segment(ggplot2::aes(xend = x, y = 0, yend = mean, color = optional(.data[[group_optional]])))) +
     onlyIf(isTRUE(attr(stprob, "proportions")),
