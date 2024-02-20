@@ -31,14 +31,14 @@ Calculate state transition proportions for given data.
 \examples{
 \dontshow{if (FALSE) (if (getRversion() >= "3.4") withAutoprint else force)(\{ # examplesIf}
 # Data structure
-str(gradu::health)
+str(nhmgrid::health)
 
 # Calculate and plot empirical transition probabilities
-props <- gradu::stprops(gradu::health, "id", "state", "age")
+props <- nhmgrid::stprops(nhmgrid::health, "id", "state", "age")
 plot(props)
 
 # Group by sex
-props <- gradu::stprops(gradu::health, "id", "state", "age", "sex")
+props <- nhmgrid::stprops(nhmgrid::health, "id", "state", "age", "sex")
 plot(props)
 \dontshow{\}) # examplesIf}
 }

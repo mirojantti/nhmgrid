@@ -1,6 +1,6 @@
 #' Plot State Transition Probabilities
 #'
-#' @param x \[`gradu::stprob`\]\cr
+#' @param x \[`nhmgrid::stprob`\]\cr
 #' The `stprob` object containing the transition probabilities.
 #' @param fun_cell \[`function(cell, index)`\]\cr
 #' The function to apply to the individual plots. By default, [identity] is
@@ -24,12 +24,12 @@
 #'
 #' @examplesIf FALSE
 #' # Estimate state transition probabilities in the health data and plot them
-#' fit <- nnet::multinom(state ~ lagstate + age, gradu::health)
-#' probs <- gradu::stprobs(fit, x = "age")
+#' fit <- nnet::multinom(state ~ lagstate + age, nhmgrid::health)
+#' probs <- nhmgrid::stprobs(fit, x = "age")
 #' plot(probs)
 #'
 #' # Calculate state transition proportions
-#' props <- gradu::stprops(gradu::health, "id", "state", "age")
+#' props <- nhmgrid::stprops(nhmgrid::health, "id", "state", "age")
 #' plot(props)
 #'
 #' # The argument `fun_cell` can be used to customize the individual cells
@@ -70,7 +70,7 @@ plot.stprob <- function(x,
       warning("Argument `fun_cell` isn't a function! Ignoring `fun_cell`.")
       return(cell)
     }
-    attr(cell, "is_gradu_cell") <- TRUE
+    attr(cell, "is_nhmgrid_cell") <- TRUE
     n_args <- length(methods::formalArgs(fun_cell))
     if (n_args == 0) {
       warning("Method `fun_cell` needs at least one argument for the cell! Ignoring `fun_cell`.")
@@ -85,7 +85,7 @@ plot.stprob <- function(x,
       }
     }
     cell_modified <- do.call(fun_cell, args = args)
-    if (!("is_gradu_cell" %in% names(attributes(cell_modified)))) {
+    if (!("is_nhmgrid_cell" %in% names(attributes(cell_modified)))) {
       warning("Method `fun_cell` doesn't return the modified cell! Ignoring `fun_cell`.")
       return(cell)
     }

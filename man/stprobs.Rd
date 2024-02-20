@@ -51,14 +51,14 @@ values using the \code{variables} argument.
 \examples{
 \dontshow{if (FALSE) (if (getRversion() >= "3.4") withAutoprint else force)(\{ # examplesIf}
 # Fit a multinomial logistic regression model
-fit <- nnet::multinom(state ~ lagstate + age + sex, gradu::health)
+fit <- nnet::multinom(state ~ lagstate + age + sex, nhmgrid::health)
 
 # Plot the transition probabilities separately for male and female
-probs <- gradu::stprobs(fit, x = "age", group = "sex")
+probs <- nhmgrid::stprobs(fit, x = "age", group = "sex")
 plot(probs)
 
 # Plot the transition probabilities for males aged 15-40 years
-probs <- gradu::stprobs(fit, x = "age", variables = list(sex = "male", age = 15:40))
+probs <- nhmgrid::stprobs(fit, x = "age", variables = list(sex = "male", age = 15:40))
 plot(probs, subtitle = "sex=male")
 \dontshow{\}) # examplesIf}
 }

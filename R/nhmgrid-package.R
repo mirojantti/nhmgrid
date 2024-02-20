@@ -5,7 +5,7 @@ utils::globalVariables(c(
 ))
 
 
-#' The `gradu` package.
+#' The `nhmgrid` package.
 #'
 #' An user friendly interface to estimating state transition probabilities
 #' using a Markov model. Includes plotting tools to visualize the probabilities
@@ -15,10 +15,10 @@ utils::globalVariables(c(
 #' * [stprobs] for information on estimating state transition probabilities.
 #' * [stprops] for information on calculating state transition proportions.
 #' * [plot.stprob] for information on plotting the probabilities.
-#' * \href{https://github.com/joakim219/gradu/issues/}{Submit a bug report or a feature request}
+#' * \href{https://github.com/joakim219/nhmgrid/issues/}{Submit a bug report or a feature request}
 #'
 #' @docType package
-#' @name gradu
+#' @name nhmgrid
 NULL
 
 #' Simulated health state dataset

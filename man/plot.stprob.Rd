@@ -15,7 +15,7 @@
 )
 }
 \arguments{
-\item{x}{[\code{gradu::stprob}]\cr
+\item{x}{[\code{nhmgrid::stprob}]\cr
 The \code{stprob} object containing the transition probabilities.}
 
 \item{fun_cell}{[\verb{function(cell, index)}]\cr
@@ -49,12 +49,12 @@ defined, it contains the index of the cell in the plot matrix. See 'Examples'.
 \examples{
 \dontshow{if (FALSE) (if (getRversion() >= "3.4") withAutoprint else force)(\{ # examplesIf}
 # Estimate state transition probabilities in the health data and plot them
-fit <- nnet::multinom(state ~ lagstate + age, gradu::health)
-probs <- gradu::stprobs(fit, x = "age")
+fit <- nnet::multinom(state ~ lagstate + age, nhmgrid::health)
+probs <- nhmgrid::stprobs(fit, x = "age")
 plot(probs)
 
 # Calculate state transition proportions
-props <- gradu::stprops(gradu::health, "id", "state", "age")
+props <- nhmgrid::stprops(nhmgrid::health, "id", "state", "age")
 plot(props)
 
 # The argument `fun_cell` can be used to customize the individual cells

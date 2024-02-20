@@ -1,18 +1,17 @@
-Package: gradu
+Package: nhmgrid
 Type: Package
-Title: What the Package Does (Title Case)
+Title: Estimation and visualization of non-homogeneous Markov model transition probabilities
 Version: 0.1.0
 Authors@R: 
     person(given = "Miro", family = "Jäntti", email = "jantmjyv@student.jyu.fi", role = c("aut", "cre"))
-Description: More about what it does (maybe more than one line)
-    Use four spaces when indenting paragraphs within the Description.
+Description: Estimates transition probabilities using marginaleffects and visualizes them using ggplot2.
 License: GPL-3
 Encoding: UTF-8
 LazyData: true
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.2.3
-URL: https://github.com/joakim219/gradu
-BugReports: https://github.com/joakim219/gradu/issues
+URL: https://github.com/joakim219/nhmgrid
+BugReports: https://github.com/joakim219/nhmgrid/issues
 Depends: 
     R (>= 2.10),
 Imports:

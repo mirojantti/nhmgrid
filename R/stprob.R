@@ -30,14 +30,14 @@
 #'
 #' @examplesIf FALSE
 #' # Fit a multinomial logistic regression model
-#' fit <- nnet::multinom(state ~ lagstate + age + sex, gradu::health)
+#' fit <- nnet::multinom(state ~ lagstate + age + sex, nhmgrid::health)
 #'
 #' # Plot the transition probabilities separately for male and female
-#' probs <- gradu::stprobs(fit, x = "age", group = "sex")
+#' probs <- nhmgrid::stprobs(fit, x = "age", group = "sex")
 #' plot(probs)
 #'
 #' # Plot the transition probabilities for males aged 15-40 years
-#' probs <- gradu::stprobs(fit, x = "age", variables = list(sex = "male", age = 15:40))
+#' probs <- nhmgrid::stprobs(fit, x = "age", variables = list(sex = "male", age = 15:40))
 #' plot(probs, subtitle = "sex=male")
 #'
 #' @importFrom nnet multinom
@@ -136,14 +136,14 @@ stprobs <- function(model,
 #'
 #' @examplesIf FALSE
 #' # Data structure
-#' str(gradu::health)
+#' str(nhmgrid::health)
 #'
 #' # Calculate and plot empirical transition probabilities
-#' props <- gradu::stprops(gradu::health, "id", "state", "age")
+#' props <- nhmgrid::stprops(nhmgrid::health, "id", "state", "age")
 #' plot(props)
 #'
 #' # Group by sex
-#' props <- gradu::stprops(gradu::health, "id", "state", "age", "sex")
+#' props <- nhmgrid::stprops(nhmgrid::health, "id", "state", "age", "sex")
 #' plot(props)
 #'
 #' @import data.table
