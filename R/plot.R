@@ -62,7 +62,7 @@ plot.stprob <- function(x,
     stop("The object to plot is not a `stprob` object!")
   }
 
-  n_states <- length(unique(x$from))
+  n_states <- length(levels(x$from))
   n_cases <- n_states * n_states
 
   pw <- Reduce(`+`, lapply(seq_len(n_cases), \(i) {
