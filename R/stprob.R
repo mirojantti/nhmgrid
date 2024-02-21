@@ -103,7 +103,8 @@ stprobs <- function(model,
   }
 
   prob <- estimate_probs(model, new_data, x, group, lag_state, interval)
-  prob <- prob[order(x, match(from, response$values), match(to, response$values))]
+  prob$from = factor(prob$from, levels = response$values)
+  prob$to = factor(prob$to, levels = response$values)
 
   stprob <- manual_stprob(prob)
   attr(stprob, "pro(b|p)") <- "b"
@@ -164,8 +165,8 @@ stprops <- function(data, id, state, x, group = NULL) {
   }
 
   prob <- data.table::CJ(
-    from = state_values,
-    to = state_values,
+    from = factor(state_values, levels = state_values),
+    to = factor(state_values, levels = state_values),
     x = x_values,
     group = orElse(unique(data[[group]]), NA),
     mean = 0
@@ -262,6 +263,8 @@ manual_stprob <- function(prob) {
   stopifnot(
     is.data.frame(prob),
     all(c("x", "from", "to", "mean") %in% colnames(prob)),
+    is.factor(prob$from),
+    is.factor(prob$to),
     is.numeric(prob$mean),
     !("lower" %in% colnames(prob)) || is.numeric(prob$lower),
     !("upper" %in% colnames(prob)) || is.numeric(prob$upper),
@@ -269,8 +272,6 @@ manual_stprob <- function(prob) {
   )
 
   stprob <- data.table::as.data.table(prob)
-  stprob$from <- as.factor(stprob$from)
-  stprob$to <- as.factor(stprob$to)
   class(stprob) <- c("stprob", class(stprob))
   return(stprob)
 }

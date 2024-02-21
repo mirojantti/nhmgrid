@@ -135,46 +135,21 @@ fake_axis <- function(...) {
 }
 
 plot_cell <- function(stprob, gx, gy) {
-  group <- attr(stprob, "group")
-  if (is.factor(stprob$from)) {
-    state_values <- levels(stprob$from)
-  } else {
-    state_values <- unique(stprob$from)
-  }
+  state_values <- levels(stprob$from)
   probp <- attr(stprob, "pro(b|p)")
+  group <- attr(stprob, "group")
+  if (is.null(stprob$group) || any(is.na(stprob$group))) {
+    group <- NULL
+  }
 
   state_from <- state_values[gy]
   state_to <- state_values[gx]
-  settings <- list(
-    ggplot2::labs(
-      x = NULL,
-      y = onlyIf(gx == 1, bquote(.(state_from) %->% "")),
-      subtitle = onlyIf(gy == 1, bquote("" %->% .(state_to)))
-    ),
-    ggplot2::coord_cartesian(ylim = c(0, 1)),
-    ggplot2::scale_linetype_discrete(name = group),
-    ggplot2::scale_color_discrete(name = group),
-    ggplot2::scale_fill_discrete(name = group),
-    ggplot2::theme(
-      plot.subtitle = ggplot2::element_text(hjust = 0.5)
-    )
-  )
-  if(gy != length(state_values)) {
-    settings[[length(settings) + 1]] <- ggplot2::theme(
-      axis.text.x = ggplot2::element_blank(),
-      axis.ticks.x = ggplot2::element_blank()
-    )
-  }
-  if(gx != 1) {
-    settings[[length(settings) + 1]] <- ggplot2::theme(
-      axis.text.y = ggplot2::element_blank(),
-      axis.ticks.y = ggplot2::element_blank()
-    )
-  }
 
   cell_data <- stprob[to == state_to & from == state_from]
 
   draw_interval <- all(c("lower", "upper") %in% colnames(cell_data))
+  hide_x_axis <- gy != length(state_values)
+  hide_y_axis <- gx != 1
 
   group_optional <- onlyIf(!is.null(group), "group")
 
@@ -182,26 +157,36 @@ plot_cell <- function(stprob, gx, gy) {
     data = cell_data,
     mapping = ggplot2::aes(y = mean, x = cell_data$x, group = orElse(cell_data$group, 1))
   ) +
-    onlyIf(draw_interval,
-           ggplot2::geom_ribbon(ggplot2::aes(
-             group = NULL,
-             ymin = lower,
-             ymax = upper,
-             fill = optional(.data[[group_optional]])),
-           alpha = 0.25
-           )) +
-    onlyIf(draw_interval,
-           ggplot2::geom_line(ggplot2::aes(y = lower, color = optional(.data[[group_optional]]), linetype = optional(.data[[group_optional]])), alpha = 0.25)) +
-    onlyIf(draw_interval,
-           ggplot2::geom_line(ggplot2::aes(y = upper, color = optional(.data[[group_optional]]), linetype = optional(.data[[group_optional]])), alpha = 0.25)) +
-
+    onlyIf(draw_interval, list(
+      ggplot2::geom_ribbon(ggplot2::aes(group = NULL, ymin = lower, ymax = upper, fill = optional(.data[[group_optional]])), alpha = 0.25),
+      ggplot2::geom_line(ggplot2::aes(y = lower, color = optional(.data[[group_optional]]), linetype = optional(.data[[group_optional]])), alpha = 0.25),
+      ggplot2::geom_line(ggplot2::aes(y = upper, color = optional(.data[[group_optional]]), linetype = optional(.data[[group_optional]])), alpha = 0.25)
+    )) +
     onlyIf(probp == "b",
-           ggplot2::geom_line(ggplot2::aes(color = optional(.data[[group_optional]]), linetype = optional(.data[[group_optional]])))) +
-
-    onlyIf(probp == "p",
-           ggplot2::geom_segment(ggplot2::aes(xend = x, y = 0, yend = mean, color = optional(.data[[group_optional]])))) +
-    onlyIf(probp == "p",
-           ggplot2::geom_point(ggplot2::aes(color = optional(.data[[group_optional]])))) +
-
-    settings
+      ggplot2::geom_line(ggplot2::aes(color = optional(.data[[group_optional]]), linetype = optional(.data[[group_optional]])))
+    ) +
+    onlyIf(probp == "p", list(
+      ggplot2::geom_segment(ggplot2::aes(xend = x, y = 0, yend = mean, color = optional(.data[[group_optional]]))),
+      ggplot2::geom_point(ggplot2::aes(color = optional(.data[[group_optional]])))
+    )) +
+    ggplot2::labs(
+      x = NULL,
+      y = onlyIf(gx == 1, bquote(.(state_from) %->% "")),
+      subtitle = onlyIf(gy == 1, bquote("" %->% .(state_to)))
+    ) +
+    ggplot2::coord_cartesian(ylim = c(0, 1)) +
+    ggplot2::scale_linetype_discrete(name = group) +
+    ggplot2::scale_color_discrete(name = group) +
+    ggplot2::scale_fill_discrete(name = group) +
+    ggplot2::theme(
+      plot.subtitle = ggplot2::element_text(hjust = 0.5)
+    ) +
+    onlyIf(hide_x_axis,  ggplot2::theme(
+      axis.text.x = ggplot2::element_blank(),
+      axis.ticks.x = ggplot2::element_blank()
+    )) +
+    onlyIf(hide_y_axis,  ggplot2::theme(
+      axis.text.y = ggplot2::element_blank(),
+      axis.ticks.y = ggplot2::element_blank()
+    ))
 }
