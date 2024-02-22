@@ -339,10 +339,12 @@ estimate_probs <- function(model, new_data, x, group, lag_state, interval) {
     conf_level = interval,
   ) |> data.table::as.data.table()
 
-  p[, c("std.error", "statistic", "p.value", "s.value") := NULL]
+  cols <- c("group", x, orElse(group, ""), lag_state, "estimate", "conf.low", "conf.high")
+  pick_cols <- intersect(cols, names(p))
 
+  p <- p[, ..pick_cols]
   setnames(p,
-           old = c("group", x, orElse(group, ""), lag_state, "estimate", "conf.low", "conf.high"),
+           old = cols,
            new = c("to", "x", "group", "from", "mean", "lower", "upper"),
            skip_absent = TRUE)
 
