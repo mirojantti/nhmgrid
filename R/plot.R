@@ -58,18 +58,20 @@ plot.stprob <- function(x, default_geoms = TRUE, ...) {
                     fill = group_optional,
                     linetype = group_optional
                   )) +
-    onlyIf(attr(x, "pro(b|p)") == "b", list(
-      onlyIf(add_interval, list(
-        ggplot2::geom_ribbon(ggplot2::aes(ymin = lower, ymax = upper), alpha = 0.1),
-        ggplot2::geom_line(ggplot2::aes(y = lower), alpha = 0.1),
-        ggplot2::geom_line(ggplot2::aes(y = upper), alpha = 0.1)
+    onlyIf(default_geoms, list(
+      onlyIf(attr(x, "pro(b|p)") == "b", list(
+        onlyIf(add_interval, list(
+          ggplot2::geom_ribbon(ggplot2::aes(ymin = lower, ymax = upper), alpha = 0.1),
+          ggplot2::geom_line(ggplot2::aes(y = lower), alpha = 0.1),
+          ggplot2::geom_line(ggplot2::aes(y = upper), alpha = 0.1)
+        )),
+        ggplot2::geom_line(linewidth = 1)
       )),
-      ggplot2::geom_line(linewidth = 1)
-    )) +
-    onlyIf(attr(x, "pro(b|p)") == "p", list(
-      ggplot2::geom_point(),
-      ggplot2::geom_segment(ggplot2::aes(xend = x, y = 0, yend = mean))
-    )) +
+      onlyIf(attr(x, "pro(b|p)") == "p", list(
+        ggplot2::geom_point(),
+        ggplot2::geom_segment(ggplot2::aes(xend = x, y = 0, yend = mean))
+      ))
+    ))+
     ggplot2::facet_grid(from ~ to,
                         switch = "y",
                         labeller = ggplot2::label_bquote(
