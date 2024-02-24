@@ -246,14 +246,6 @@ as.stprob.array <- function(x, ...) {
 
 #' Manual creation of a `stprob` object
 #'
-#' @param state_name \[`character(1)`\]\cr
-#' The name of the variable that denotes the state of observations.
-#' @param state_values \[`character() or integer()`\]\cr
-#' A vector of possible state values.
-#' @param x_name \[`character(1)`\]\cr
-#' The name of the variable that is used for the x-axis.
-#' @param group_name \[`character(1)`\]\cr
-#' The name of the variable that is used for grouping.
 #' @param prob \[`data.table or data.frame`\]\cr
 #' A data table/frame containing the state transition probabilities.
 #' See 'Details'.

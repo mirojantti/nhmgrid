@@ -2,17 +2,8 @@
 #'
 #' @param x \[`nhmgrid::stprob`\]\cr
 #' The `stprob` object containing the transition probabilities.
-#' @param fun_cell \[`function(cell, index)`\]\cr
-#' The function to apply to the individual plots. By default, [identity] is
-#' used. See 'Details' and 'Examples'.
-#' @param title \[`character(1)`\]\cr
-#' Title for the plot. If explicitly set to `NULL`, no title is used.
-#' @param subtitle \[`character(1)`\]\cr
-#' Subtitle for the plot.
-#' @param x_label \[`character(1)`\]\cr
-#' Label for the x-axis. If explicitly set to `NULL`, no label is used.
-#' @param y_label \[`character(1)`\]\cr
-#' Label for the y-axis. If explicitly set to `NULL`, no label is used.
+#' @param default_geoms \[`logical(1)`\]\cr
+#' See 'Details' and 'Examples'.
 #' @param ... Ignored.
 #'
 #' @details
@@ -32,7 +23,7 @@
 #' props <- nhmgrid::stprops(nhmgrid::health, "id", "state", "age")
 #' plot(props)
 #'
-#' # The argument `fun_cell` can be used to customize the individual cells
+#' # The argument `fun_cell` can be used to customize the individual cells # TODO
 #'
 #' # One could add a smoothing lines in all of the plots
 #' plot(props, fun_cell = \(cell) cell + ggplot2::geom_smooth())
@@ -45,148 +36,52 @@
 #'   return(cell)
 #' })
 #'
-#' @importFrom methods formalArgs
-#' @import data.table
-#' @import ggplot2
-#' @import patchwork
-#' @importFrom nnet multinom
 #' @export
-plot.stprob <- function(x,
-                        fun_cell = identity,
-                        title = NULL,
-                        subtitle = NULL,
-                        x_label = NULL,
-                        y_label = NULL,
-                        ...) {
+plot.stprob <- function(x, default_geoms = TRUE, ...) {
   if (!("stprob" %in% class(x))) {
     stop("The object to plot is not a `stprob` object!")
   }
 
-  n_states <- length(levels(x$from))
-  n_cases <- n_states * n_states
-
-  pw <- Reduce(`+`, lapply(seq_len(n_cases), \(i) {
-    gx <- ifelse(i %% n_states != 0, i %% n_states, n_states)
-    gy <- floor((i - 1) / n_states) + 1
-    cell <- plot_cell(x, gx, gy)
-    if (!is.function(fun_cell)) {
-      warning("Argument `fun_cell` isn't a function! Ignoring `fun_cell`.")
-      return(cell)
-    }
-    attr(cell, "is_nhmgrid_cell") <- TRUE
-    n_args <- length(methods::formalArgs(fun_cell))
-    if (n_args == 0) {
-      warning("Method `fun_cell` needs at least one argument for the cell! Ignoring `fun_cell`.")
-      return(cell)
-    }
-    args <- list(cell)
-    if (n_args > 1) {
-      args[2] <- i
-      if (n_args > 2) {
-        warning("Method `fun_cell` has more than 2 arguments! Ignoring the extra.")
-        args[3:n_args] <- NA
-      }
-    }
-    cell_modified <- do.call(fun_cell, args = args)
-    if (!("is_nhmgrid_cell" %in% names(attributes(cell_modified)))) {
-      warning("Method `fun_cell` doesn't return the modified cell! Ignoring `fun_cell`.")
-      return(cell)
-    }
-    return(cell_modified)
-  })) +
-    patchwork::plot_layout(
-      guides = "collect",
-      ncol = n_states,
-      nrow = n_states)
-
-  probp_full <- ifelse(attr(x, "pro(b|p)") == "b", "probability", "proportion")
-  if (missing(y_label)) {
-    y_label <- orElse(y_label, paste("transition", probp_full))
-  }
-  if (missing(x_label)) {
-    x_label <- orElse(x_label, attr(x, "x_name"))
-  }
-  if (missing(title)) {
-    title <- orElse(title, paste("State transition", probp_full, "matrix"))
+  group_optional <- optional(x$group)
+  if (any(is.na(group_optional))) {
+    group_optional <- NULL
   }
 
-  y_axis <- do.call("fake_axis", args = list(y = y_label))
-  x_axis <- do.call("fake_axis", args = list(x = x_label))
+  add_interval <- all(c("lower", "upper") %in% names(x))
+  y_label <- paste("transition", ifelse(attr(x, "pro(b|p)") == "b", "probability", "proportion"))
 
-  layout <- "
-    BA
-    CC
-  "
-  result <- patchwork::wrap_elements(full = pw) + y_axis + x_axis +
-    patchwork::plot_layout(design = layout,
-                           widths = c(0, 1),
-                           heights = c(1, 0)) +
-    patchwork::plot_annotation(
-      title = title,
-      subtitle = subtitle
-    )
-  return(result)
-}
-
-fake_axis <- function(...) {
-  return(ggplot2::ggplot() +
-           ggplot2::labs(...) +
-           patchwork::plot_layout(widths = 0, heights = 0))
-}
-
-plot_cell <- function(stprob, gx, gy) {
-  state_values <- levels(stprob$from)
-  probp <- attr(stprob, "pro(b|p)")
-  group <- attr(stprob, "group")
-  if (is.null(stprob$group) || any(is.na(stprob$group))) {
-    group <- NULL
-  }
-
-  state_from <- state_values[gy]
-  state_to <- state_values[gx]
-
-  cell_data <- stprob[to == state_to & from == state_from]
-
-  draw_interval <- all(c("lower", "upper") %in% colnames(cell_data))
-  hide_x_axis <- gy != length(state_values)
-  hide_y_axis <- gx != 1
-
-  group_optional <- onlyIf(!is.null(group), "group")
-
-  ggplot2::ggplot(
-    data = cell_data,
-    mapping = ggplot2::aes(y = mean, x = cell_data$x, group = orElse(cell_data$group, 1))
-  ) +
-    onlyIf(draw_interval, list(
-      ggplot2::geom_ribbon(ggplot2::aes(group = NULL, ymin = lower, ymax = upper, fill = optional(.data[[group_optional]])), alpha = 0.25),
-      ggplot2::geom_line(ggplot2::aes(y = lower, color = optional(.data[[group_optional]]), linetype = optional(.data[[group_optional]])), alpha = 0.25),
-      ggplot2::geom_line(ggplot2::aes(y = upper, color = optional(.data[[group_optional]]), linetype = optional(.data[[group_optional]])), alpha = 0.25)
+  ggplot2::ggplot(data = x,
+                  mapping = ggplot2::aes(
+                    x = x,
+                    y = mean,
+                    color = group_optional,
+                    fill = group_optional,
+                    linetype = group_optional
+                  )) +
+    onlyIf(attr(x, "pro(b|p)") == "b", list(
+      onlyIf(add_interval, list(
+        ggplot2::geom_ribbon(ggplot2::aes(ymin = lower, ymax = upper), alpha = 0.1),
+        ggplot2::geom_line(ggplot2::aes(y = lower), alpha = 0.1),
+        ggplot2::geom_line(ggplot2::aes(y = upper), alpha = 0.1)
+      )),
+      ggplot2::geom_line(linewidth = 1)
     )) +
-    onlyIf(probp == "b",
-      ggplot2::geom_line(ggplot2::aes(color = optional(.data[[group_optional]]), linetype = optional(.data[[group_optional]])))
-    ) +
-    onlyIf(probp == "p", list(
-      ggplot2::geom_segment(ggplot2::aes(xend = x, y = 0, yend = mean, color = optional(.data[[group_optional]]))),
-      ggplot2::geom_point(ggplot2::aes(color = optional(.data[[group_optional]])))
+    onlyIf(attr(x, "pro(b|p)") == "p", list(
+      ggplot2::geom_point(),
+      ggplot2::geom_segment(ggplot2::aes(xend = x, y = 0, yend = mean))
     )) +
-    ggplot2::labs(
-      x = NULL,
-      y = onlyIf(gx == 1, bquote(.(state_from) %->% "")),
-      subtitle = onlyIf(gy == 1, bquote("" %->% .(state_to)))
-    ) +
-    ggplot2::coord_cartesian(ylim = c(0, 1)) +
-    ggplot2::scale_linetype_discrete(name = group) +
-    ggplot2::scale_color_discrete(name = group) +
-    ggplot2::scale_fill_discrete(name = group) +
-    ggplot2::theme(
-      plot.subtitle = ggplot2::element_text(hjust = 0.5)
-    ) +
-    onlyIf(hide_x_axis,  ggplot2::theme(
-      axis.text.x = ggplot2::element_blank(),
-      axis.ticks.x = ggplot2::element_blank()
-    )) +
-    onlyIf(hide_y_axis,  ggplot2::theme(
-      axis.text.y = ggplot2::element_blank(),
-      axis.ticks.y = ggplot2::element_blank()
-    ))
+    ggplot2::facet_grid(from ~ to,
+                        switch = "y",
+                        labeller = ggplot2::label_bquote(
+                          rows = .(as.character(from)) %->% "",
+                          cols = "" %->% .(as.character(to)))) +
+    ggplot2::theme_bw() +
+    ggplot2::theme(strip.background = ggplot2::element_blank(),
+                   strip.placement = "outside") +
+    ggplot2::labs(x = orElse(attr(x, "x_name"), "x"),
+                  y = y_label,
+                  color = orElse(attr(x, "group"), "group"),
+                  fill = orElse(attr(x, "group"), "group"),
+                  linetype = orElse(attr(x, "group"), "group")) +
+    ggplot2::scale_y_continuous(limits = c(-0.01, 1.01))
 }

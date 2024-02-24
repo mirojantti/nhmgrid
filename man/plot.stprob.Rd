@@ -4,35 +4,14 @@
 \alias{plot.stprob}
 \title{Plot State Transition Probabilities}
 \usage{
-\method{plot}{stprob}(
-  x,
-  fun_cell = identity,
-  title = NULL,
-  subtitle = NULL,
-  x_label = NULL,
-  y_label = NULL,
-  ...
-)
+\method{plot}{stprob}(x, default_geoms = TRUE, ...)
 }
 \arguments{
 \item{x}{[\code{nhmgrid::stprob}]\cr
 The \code{stprob} object containing the transition probabilities.}
 
-\item{fun_cell}{[\verb{function(cell, index)}]\cr
-The function to apply to the individual plots. By default, \link{identity} is
-used. See 'Details' and 'Examples'.}
-
-\item{title}{[\code{character(1)}]\cr
-Title for the plot. If explicitly set to \code{NULL}, no title is used.}
-
-\item{subtitle}{[\code{character(1)}]\cr
-Subtitle for the plot.}
-
-\item{x_label}{[\code{character(1)}]\cr
-Label for the x-axis. If explicitly set to \code{NULL}, no label is used.}
-
-\item{y_label}{[\code{character(1)}]\cr
-Label for the y-axis. If explicitly set to \code{NULL}, no label is used.}
+\item{default_geoms}{[\code{logical(1)}]\cr
+See 'Details' and 'Examples'.}
 
 \item{...}{Ignored.}
 }
@@ -57,7 +36,7 @@ plot(probs)
 props <- nhmgrid::stprops(nhmgrid::health, "id", "state", "age")
 plot(props)
 
-# The argument `fun_cell` can be used to customize the individual cells
+# The argument `fun_cell` can be used to customize the individual cells # TODO
 
 # One could add a smoothing lines in all of the plots
 plot(props, fun_cell = \(cell) cell + ggplot2::geom_smooth())

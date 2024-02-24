@@ -1,7 +1,8 @@
 utils::globalVariables(c(
   "x", "group", "from", "to", "mean", "lower", "upper", "i.mean", "i.lower",
   "i.upper", "patterns", "$group$", "$lagstate$", "$n_from$", "$n_to$",
-  "$state$", "$x$", ".", "x_name", "group_name", "state_name", "state_values"
+  "$state$", "$x$", ".", "x_name", "group_name", "state_name", "state_values",
+  "default_geoms", "%->%", "..pick_cols", "$missing$"
 ))
 
 

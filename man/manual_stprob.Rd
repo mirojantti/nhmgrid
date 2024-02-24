@@ -4,21 +4,9 @@
 \alias{manual_stprob}
 \title{Manual creation of a \code{stprob} object}
 \usage{
-manual_stprob(state_name, state_values, x_name, group_name = NULL, prob)
+manual_stprob(prob)
 }
 \arguments{
-\item{state_name}{[\code{character(1)}]\cr
-The name of the variable that denotes the state of observations.}
-
-\item{state_values}{[\verb{character() or integer()}]\cr
-A vector of possible state values.}
-
-\item{x_name}{[\code{character(1)}]\cr
-The name of the variable that is used for the x-axis.}
-
-\item{group_name}{[\code{character(1)}]\cr
-The name of the variable that is used for grouping.}
-
 \item{prob}{[\verb{data.table or data.frame}]\cr
 A data table/frame containing the state transition probabilities.
 See 'Details'.}
