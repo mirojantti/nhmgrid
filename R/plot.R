@@ -85,5 +85,5 @@ plot.stprob <- function(x, default_geoms = TRUE, ...) {
                   color = orElse(attr(x, "group"), "group"),
                   fill = orElse(attr(x, "group"), "group"),
                   linetype = orElse(attr(x, "group"), "group")) +
-    ggplot2::scale_y_continuous(limits = c(-0.01, 1.01))
+    ggplot2::coord_cartesian(ylim = 0:1)
 }
