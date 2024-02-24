@@ -28,6 +28,7 @@
 #' @returns
 #' A `stprob` object containing the estimated state transition probabilities.
 #'
+#' @importFrom nnet multinom
 #' @examplesIf FALSE
 #' # Fit a multinomial logistic regression model
 #' fit <- nnet::multinom(state ~ lagstate + age + sex, nhmgrid::health)

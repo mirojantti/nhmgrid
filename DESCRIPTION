@@ -19,4 +19,5 @@ Imports:
     marginaleffects,
     ggplot2,
     insight,
-    stringi
+    stringi,
+    nnet
