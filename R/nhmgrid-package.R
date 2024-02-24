@@ -20,6 +20,7 @@ utils::globalVariables(c(
 #'
 #' @docType package
 #' @name nhmgrid
+#' @importFrom data.table :=
 NULL
 
 #' Simulated health state dataset

@@ -40,8 +40,6 @@
 #' probs <- nhmgrid::stprobs(fit, x = "age", variables = list(sex = "male", age = 15:40))
 #' plot(probs, subtitle = "sex=male")
 #'
-#' @importFrom nnet multinom
-#' @import data.table
 #' @export
 stprobs <- function(model,
                     x = NULL,
@@ -144,7 +142,6 @@ stprobs <- function(model,
 #' props <- nhmgrid::stprops(nhmgrid::health, "id", "state", "age", "sex")
 #' plot(props)
 #'
-#' @import data.table
 #' @export
 stprops <- function(data, id, state, x, group = NULL) {
   if (is.data.table(data)) {

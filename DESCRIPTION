@@ -15,9 +15,8 @@ BugReports: https://github.com/joakim219/nhmgrid/issues
 Depends: 
     R (>= 2.10),
 Imports:
-    ggplot2,
     data.table,
-    insight,
     marginaleffects,
-    stringi,
-    nnet
+    ggplot2,
+    insight,
+    stringi
