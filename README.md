@@ -58,7 +58,7 @@ nrow(health)
 ```
 
 One can calculate the transition proportions between the health states
-using `stprops` and plotthem. Because the plot is constructed using
+using `stprops` and plot them. Because the plot is constructed using
 ggplot2, it is highly customizable.
 
 ``` r
@@ -71,8 +71,8 @@ plot(props) +
 
 The transition probabilities between the states can be estimated with a
 Markov model using `stprobs`. In this example we fit a multinomial
-logistic regression model and group the probabilities separately for men
-and women.
+logistic regression model and estimate the probabilities separately for
+men and women.
 
 ``` r
 fit <- nnet::multinom(state ~ lagstate + age + sex, data = health)
