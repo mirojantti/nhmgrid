@@ -18,7 +18,8 @@ as.stprob(x, ...)
 A \code{stprob} object containing the state transition probabilities.
 }
 \description{
-Currently only works with objects obtained from \link[TraMineR:seqtrate]{TraMineR::seqtrate}.
+Currently only works with objects obtained from \link[TraMineR:seqtrate]{TraMineR::seqtrate} with
+parameter \code{time.varying} defined as \code{TRUE}.
 }
 \section{Methods (by class)}{
 \itemize{

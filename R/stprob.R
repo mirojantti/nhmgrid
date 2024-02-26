@@ -10,7 +10,7 @@
 #' the observations will not be grouped.
 #' @param variables \[`list()`\]\cr
 #' A named list containing desired predictor values to use when estimating the
-#' probabilities. See 'Details'.
+#' probabilities. See 'Details' and 'Examples'.
 #' @param lag_state \[`character(1)`\]\cr
 #' The predictor name in `model` which represents lagged states. This should
 #' only be supplied if automatic detection fails.
@@ -18,6 +18,10 @@
 #' The confidence/credibility interval.
 #'
 #' @details
+#' The transition probabilities are estimated using
+#' [marginaleffects::avg_predictions]. In case of a [dynamite::dynamite] model, a custom
+#' implementation of predicting the probabilities is used.
+#'
 #' By default, all unique predictor values are marginalized. However, unique
 #' numeric predictor values are used in marginalization only if the length of
 #' unique values are no more than 10. In case there are more than 10 unique
@@ -33,13 +37,14 @@
 #' # Fit a multinomial logistic regression model
 #' fit <- nnet::multinom(state ~ lagstate + age + sex, nhmgrid::health)
 #'
-#' # Plot the transition probabilities separately for male and female
+#' # Estimate and plot the transition probabilities separately for men and women
 #' probs <- nhmgrid::stprobs(fit, x = "age", group = "sex")
 #' plot(probs)
 #'
-#' # Plot the transition probabilities for males aged 15-40 years
+#' # Estimate and plot the transition probabilities for men aged 15-40 years
 #' probs <- nhmgrid::stprobs(fit, x = "age", variables = list(sex = "male", age = 15:40))
-#' plot(probs, subtitle = "sex=male")
+#' plot(probs) +
+#'   ggplot2::labs(title = "Men aged 15-40 years")
 #'
 #' @export
 stprobs <- function(model,
@@ -203,7 +208,8 @@ stprops <- function(data, id, state, x, group = NULL) {
 
 #' Coerce an object to a `stprob` object
 #'
-#' Currently only works with objects obtained from [TraMineR::seqtrate].
+#' Currently only works with objects obtained from [TraMineR::seqtrate] with
+#' parameter `time.varying` defined as `TRUE`.
 #'
 #' @param x The object.
 #' @param ... Ignored.
@@ -244,9 +250,36 @@ as.stprob.array <- function(x, ...) {
 
 #' Manual creation of a `stprob` object
 #'
+#' Create a `stprob` object manually. This is useful if the model used to estimate
+#' the transition probabilities is not supported by this package.
+#'
 #' @param prob \[`data.table or data.frame`\]\cr
 #' A data table/frame containing the state transition probabilities.
 #' See 'Details'.
+#'
+#' @details
+#' The argument passed to this function must be a [data.frame] with a specific
+#' structure. The table must contain the transition probabilities `mean` between
+#' factored states `from` and `to` at every time point `x`. If the transition
+#' probabilities are grouped, the group indicator must be defined in `group`.
+#' The lower and upper bounds of confidence/credibility intervals are to be set
+#' in `lower` and `upper`. The columns marked with a star may be omitted.
+#'
+#' Below is an example of the structure of the table. The values are from the
+#' [nhmgrid::health] dataset.
+#'
+#' |x|from|to|group*|mean|lower*|upper*|
+#' |-|-|-|-|-|-|-|
+#' |4|healthy|healthy|male|0.86|0.79|0.92|
+#' |4|healthy|healthy|female|0.89|0.84|0.95|
+#' |4|healthy|sick|male|0.14|0.07|0.20|
+#' |4|healthy|sick|female|0.11|0.05|0.16|
+#' |4|healthy|deceased|male|0.00|0.00|0.01|
+#' |4|healthy|deceased|female|0.00|0.00|0.00|
+#' |4|sick|healthy|male|0.84|0.74|0.93|
+#' |...|...|...|...|...|...|...|
+#' |5|healthy|healthy|male|0.85|0.78|0.92|
+#' |...|...|...|...|...|...|...|
 #'
 #' @export
 manual_stprob <- function(prob) {

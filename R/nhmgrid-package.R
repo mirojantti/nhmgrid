@@ -13,9 +13,11 @@ utils::globalVariables(c(
 #' over time between groups.
 #'
 #' # See also
-#' * [stprobs] for information on estimating state transition probabilities.
-#' * [stprops] for information on calculating state transition proportions.
-#' * [plot.stprob] for information on plotting the probabilities.
+#' * [nhmgrid::health] for information on the data set used in examples.
+#' * [nhmgrid::stprobs] for information on estimating state transition probabilities.
+#' * [nhmgrid::stprops] for information on calculating state transition proportions.
+#' * [nhmgrid::plot.stprob] for information on plotting the probabilities.
+#' * [nhmgrid::manual_stprob] for information on creating a `stprob` object manually.
 #' * \href{https://github.com/joakim219/nhmgrid/issues/}{Submit a bug report or a feature request}
 #'
 #' @docType package
@@ -25,8 +27,9 @@ NULL
 
 #' Simulated health state dataset
 #'
-#' This panel data contains simulated health state measurements from multiple
-#' individuals over several years.
+#' This panel data contains simulated health state measurements from 50
+#' individuals over 10 years. This data set is used in the examples of the
+#' [nhmgrid] package.
 #'
 #' @format ## `health`
 #' A data frame with 500 rows and 4 columns:

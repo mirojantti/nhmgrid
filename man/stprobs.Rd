@@ -25,7 +25,7 @@ the observations will not be grouped.}
 
 \item{variables}{[\code{list()}]\cr
 A named list containing desired predictor values to use when estimating the
-probabilities. See 'Details'.}
+probabilities. See 'Details' and 'Examples'.}
 
 \item{lag_state}{[\code{character(1)}]\cr
 The predictor name in \code{model} which represents lagged states. This should
@@ -41,6 +41,10 @@ A \code{stprob} object containing the estimated state transition probabilities.
 Estimate state transition probabilities for given Markov model.
 }
 \details{
+The transition probabilities are estimated using
+\link[marginaleffects:predictions]{marginaleffects::avg_predictions}. In case of a \link[dynamite:dynamite]{dynamite::dynamite} model, a custom
+implementation of predicting the probabilities is used.
+
 By default, all unique predictor values are marginalized. However, unique
 numeric predictor values are used in marginalization only if the length of
 unique values are no more than 10. In case there are more than 10 unique
@@ -53,12 +57,13 @@ values using the \code{variables} argument.
 # Fit a multinomial logistic regression model
 fit <- nnet::multinom(state ~ lagstate + age + sex, nhmgrid::health)
 
-# Plot the transition probabilities separately for male and female
+# Estimate and plot the transition probabilities separately for men and women
 probs <- nhmgrid::stprobs(fit, x = "age", group = "sex")
 plot(probs)
 
-# Plot the transition probabilities for males aged 15-40 years
+# Estimate and plot the transition probabilities for men aged 15-40 years
 probs <- nhmgrid::stprobs(fit, x = "age", variables = list(sex = "male", age = 15:40))
-plot(probs, subtitle = "sex=male")
+plot(probs) +
+  ggplot2::labs(title = "Men aged 15-40 years")
 \dontshow{\}) # examplesIf}
 }

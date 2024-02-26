@@ -1,17 +1,30 @@
 #' Plot State Transition Probabilities
 #'
+#' Plot state transition probabilities as a matrix of figures.
+#'
 #' @param x \[`nhmgrid::stprob`\]\cr
 #' The `stprob` object containing the transition probabilities.
 #' @param default_geoms \[`logical(1)`\]\cr
-#' See 'Details' and 'Examples'.
+#' Inclusion of default geometric layers. See 'Details' and 'Examples'.
 #' @param ... Ignored.
 #'
 #' @details
-#' The function defined in `fun_cell` is applied to all cells of the plot matrix
-#' individually. The function should be defined with 1 or 2 arguments and it
-#' should return the modified plot. The first argument is assigned the original
-#' plot object obtained with [ggplot2::ggplot]. If the second argument is
-#' defined, it contains the index of the cell in the plot matrix. See 'Examples'.
+#' The resulting plot is created with [ggplot2]. The matrix-like structure is
+#' constructed with [ggplot2::facet_grid]. By default, certain geometric layers
+#' are added in the plot to visualize the data. In order to replace the default
+#' geometric components one has to define `default_geoms` as `FALSE` and add the
+#' new layers manually.
+#'
+#' When plotting the result of [nhmgrid::stprobs], the default geometric components
+#' are [ggplot2::geom_line] and [ggplot2::geom_ribbon] for the estimates and their
+#' corresponding confidence/credibility intervals. When plotting the result of
+#' [nhmgrid::stprops], the default geometric components for the resulting
+#' lollipop plot are [ggplot2::geom_point] and [ggplot2::geom_segment].
+#'
+#' One can add any [ggplot2] objects to the result of this function. See the
+#' 'Examples' section.
+#'
+#' @returns A [ggplot2] figure.
 #'
 #' @examplesIf FALSE
 #' # Estimate state transition probabilities in the health data and plot them
@@ -19,22 +32,25 @@
 #' probs <- nhmgrid::stprobs(fit, x = "age")
 #' plot(probs)
 #'
-#' # Calculate state transition proportions
+#' # Calculate state transition proportions and plot them with a custom title
 #' props <- nhmgrid::stprops(nhmgrid::health, "id", "state", "age")
-#' plot(props)
+#' plot(props) +
+#'   ggplot2::labs(title = "Custom title")
 #'
-#' # The argument `fun_cell` can be used to customize the individual cells # TODO
+#' # The parameter `default_geoms` can be used to hide/replace the default
+#' # geometric components
 #'
-#' # One could add a smoothing lines in all of the plots
-#' plot(props, fun_cell = \(cell) cell + ggplot2::geom_smooth())
+#' # Defining it as FALSE will result in a matrix of empty plots
+#' plot(probs, default_geoms = FALSE)
 #'
-#' # or only in a specific cell by using a 2 argument function
-#' plot(props, fun_cell = \(cell, index) {
-#'   if (index == 5) {
-#'     return(cell + ggplot2::geom_smooth())
-#'   }
-#'   return(cell)
-#' })
+#' # Combining this with specific components will replace the default components
+#' plot(probs, default_geoms = FALSE) +
+#'   ggplot2::geom_area()
+#'
+#' # One could plot the probabilities and proportions together
+#' plot(probs) +
+#'   ggplot2::geom_point(data = props) +
+#'   ggplot2::geom_smooth(data = props, se = FALSE)
 #'
 #' @export
 plot.stprob <- function(x, default_geoms = TRUE, ...) {

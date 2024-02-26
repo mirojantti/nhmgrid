@@ -20,7 +20,8 @@ A data frame with 500 rows and 4 columns:
 health
 }
 \description{
-This panel data contains simulated health state measurements from multiple
-individuals over several years.
+This panel data contains simulated health state measurements from 50
+individuals over 10 years. This data set is used in the examples of the
+\link{nhmgrid} package.
 }
 \keyword{datasets}
