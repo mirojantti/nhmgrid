@@ -68,4 +68,4 @@ probs <- stprobs(fit, x = "age", group = "sex")
 plot(probs)
 ```
 
-For more examples, see the package vignette.
+For more examples, see the package documentation.

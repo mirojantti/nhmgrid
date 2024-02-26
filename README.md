@@ -82,4 +82,4 @@ plot(probs)
 
 <img src="man/figures/README-probs-1.png" style="display: block; margin: auto;" />
 
-For more examples, see the package vignette.
+For more examples, see the package documentation.
