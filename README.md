@@ -1,7 +1,7 @@
 
 <!-- README.md is generated from README.Rmd. Please edit that file -->
 
-# nhmgrid: An R package for visualization of nonhomogeneous Markov model probabilities
+# nhmgrid: An R package for visualization of non-homogeneous Markov model probabilities
 
 <!-- badges: start -->
 
