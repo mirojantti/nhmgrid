@@ -8,7 +8,7 @@ utils::globalVariables(c(
 
 #' The `nhmgrid` package.
 #'
-#' An user friendly interface to estimating state transition probabilities
+#' A user friendly interface to estimating state transition probabilities
 #' using a Markov model. Includes plotting tools to visualize the probabilities
 #' over time between groups.
 #'
