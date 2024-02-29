@@ -18,6 +18,7 @@ Imports:
     data.table,
     marginaleffects,
     ggplot2,
+    Hmisc,
     insight,
     stringi,
     nnet
