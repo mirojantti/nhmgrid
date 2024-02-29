@@ -65,6 +65,9 @@ stprobs <- function(model,
       warning("Argument `interval` should be a value between 0 and 1!")
     }
   }
+  if (!is_dynamitefit(model) && missing(x)) {
+    stop("Argument `x` not supplied!")
+  }
 
   fit_data <- find_data(model)
   response <- find_response(model)
