@@ -27,14 +27,14 @@
 #' # Fit a multinomial logistic regression model
 #' fit <- nnet::multinom(state ~ lagstate + age + sex, nhmgrid::health)
 #'
-#' # Estimate and plot the transition probabilities separately for men and women
-#' probs <- nhmgrid::stprobs(fit, x = "age", group = "sex")
+#' # Estimate and plot the transition probabilities
+#' probs <- nhmgrid::stprobs(fit, x = "age")
 #' plot(probs)
 #'
-#' # Estimate and plot the transition probabilities for men aged 15-40 years
-#' probs <- nhmgrid::stprobs(fit, x = "age", variables = list(sex = "male", age = 15:40))
+#' # Estimate and plot the transition probabilities separately for men and women
+#' probs <- nhmgrid::stprobs(fit, x = "age", group = "sex")
 #' plot(probs) +
-#'   ggplot2::labs(title = "Men aged 15-40 years")
+#'   ggplot2::labs(title = "Men and women separately")
 #'
 #' @export
 stprobs <- function(model,
@@ -83,7 +83,7 @@ stprobs <- function(model,
     datagrid_args[[lag_state]] <- response$values
   }
   new_data <- do.call(marginaleffects::datagrid, args = datagrid_args)
-  new_data <- new_data[complete.cases(new_data), ]
+  new_data <- new_data[stats::complete.cases(new_data), ]
   new_data <- data.table::as.data.table(new_data)
 
   new_data[, c(remove_cols) := list(NULL)]
@@ -92,7 +92,6 @@ stprobs <- function(model,
     new_data <- new_data[order(new_data[[x]])]
     n <- table(new_data[[x]])[1]
     new_data[, c(model$group_var) := as.factor(rep(-(1:n), l = .N))]
-    nd <<- new_data
   }
 
   if (is_dynamitefit(model)) {

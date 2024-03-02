@@ -4,14 +4,7 @@
 \alias{stprobs}
 \title{State Transition Probabilities}
 \usage{
-stprobs(
-  model,
-  x = NULL,
-  group = NULL,
-  variables = NULL,
-  lag_state = NULL,
-  interval = 0.95
-)
+stprobs(model, x = NULL, group = NULL, lag_state = NULL, interval = 0.95)
 }
 \arguments{
 \item{model}{The model object.}
@@ -22,10 +15,6 @@ The predictor name in \code{model} which represents time.}
 \item{group}{[\code{character(1)}]\cr
 The predictor name in \code{model} which to group the observations by. If \code{NULL},
 the observations will not be grouped.}
-
-\item{variables}{[\code{list()}]\cr
-A named list containing desired predictor values to use when estimating the
-probabilities. See 'Details' and 'Examples'.}
 
 \item{lag_state}{[\code{character(1)}]\cr
 The predictor name in \code{model} which represents lagged states. This should
@@ -44,26 +33,19 @@ Estimate state transition probabilities for given Markov model.
 The transition probabilities are estimated using
 \link[marginaleffects:predictions]{marginaleffects::avg_predictions}. In case of a \link[dynamite:dynamite]{dynamite::dynamite} model, a custom
 implementation of predicting the probabilities is used.
-
-By default, all unique predictor values are marginalized. However, unique
-numeric predictor values are used in marginalization only if the length of
-unique values are no more than 10. In case there are more than 10 unique
-numeric values, only the mean of the original values are used in the
-estimation. This limitation can be circumvented by supplying the desired
-values using the \code{variables} argument.
 }
 \examples{
 \dontshow{if (FALSE) (if (getRversion() >= "3.4") withAutoprint else force)(\{ # examplesIf}
 # Fit a multinomial logistic regression model
 fit <- nnet::multinom(state ~ lagstate + age + sex, nhmgrid::health)
 
-# Estimate and plot the transition probabilities separately for men and women
-probs <- nhmgrid::stprobs(fit, x = "age", group = "sex")
+# Estimate and plot the transition probabilities
+probs <- nhmgrid::stprobs(fit, x = "age")
 plot(probs)
 
-# Estimate and plot the transition probabilities for men aged 15-40 years
-probs <- nhmgrid::stprobs(fit, x = "age", variables = list(sex = "male", age = 15:40))
+# Estimate and plot the transition probabilities separately for men and women
+probs <- nhmgrid::stprobs(fit, x = "age", group = "sex")
 plot(probs) +
-  ggplot2::labs(title = "Men aged 15-40 years")
+  ggplot2::labs(title = "Men and women separately")
 \dontshow{\}) # examplesIf}
 }
