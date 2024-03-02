@@ -33,7 +33,7 @@ You can install the most recent version of `nhmgrid` by running the following li
 
 ```{r, eval = FALSE}
 # install.packages("devtools")
-devtools::install_github("joakim219/nhmgrid")
+devtools::install_github("mirojantti/nhmgrid")
 ```
 
 ## Example

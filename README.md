@@ -27,7 +27,7 @@ following lines:
 
 ``` r
 # install.packages("devtools")
-devtools::install_github("joakim219/nhmgrid")
+devtools::install_github("mirojantti/nhmgrid")
 ```
 
 ## Example
