@@ -8,9 +8,6 @@
 #' @param group \[`character(1)`\]\cr
 #' The predictor name in `model` which to group the observations by. If `NULL`,
 #' the observations will not be grouped.
-#' @param variables \[`list()`\]\cr
-#' A named list containing desired predictor values to use when estimating the
-#' probabilities. See 'Details' and 'Examples'.
 #' @param lag_state \[`character(1)`\]\cr
 #' The predictor name in `model` which represents lagged states. This should
 #' only be supplied if automatic detection fails.
@@ -21,13 +18,6 @@
 #' The transition probabilities are estimated using
 #' [marginaleffects::avg_predictions]. In case of a [dynamite::dynamite] model, a custom
 #' implementation of predicting the probabilities is used.
-#'
-#' By default, all unique predictor values are marginalized. However, unique
-#' numeric predictor values are used in marginalization only if the length of
-#' unique values are no more than 10. In case there are more than 10 unique
-#' numeric values, only the mean of the original values are used in the
-#' estimation. This limitation can be circumvented by supplying the desired
-#' values using the `variables` argument.
 #'
 #' @returns
 #' A `stprob` object containing the estimated state transition probabilities.
@@ -50,15 +40,8 @@
 stprobs <- function(model,
                     x = NULL,
                     group = NULL,
-                    variables = NULL,
                     lag_state = NULL,
                     interval = 0.95) {
-  if (!is.list(variables)) {
-    if (!is.null(variables)) {
-      stop("Argument `variables` value is not a list!")
-    }
-    variables <- list()
-  }
   if (!is.null(interval)) {
     interval <- onlyIf(is.numeric(interval) && 0 <= interval && interval <= 1, interval)
     if (is.null(interval)) {
@@ -87,29 +70,36 @@ stprobs <- function(model,
     }
   }
 
+  remove_cols <- "rowidcf"
   datagrid_args <- list(
     newdata = fit_data,
-    FUN_character = unique,
-    FUN_factor = unique,
-    FUN_logical = unique,
-    FUN_numeric = \(q) unique_or_mean(q, fit_data, x),
-    FUN_integer = \(q) unique_or_mean(q, fit_data, x),
-    FUN_other = unique
+    grid_type = "counterfactual"
   )
+  datagrid_args[[x]] <- unique(fit_data[[x]])
   if (is_dynamitefit(model)) {
-    variables[[model$group_var]] <- fit_data[[model$group_var]][1]
+    datagrid_args[[response$name]] <- response$values[1]
+    remove_cols <- c(remove_cols, model$group_var)
+  } else {
+    datagrid_args[[lag_state]] <- response$values
   }
-  datagrid_args <- c(datagrid_args, variables)
+  new_data <- do.call(marginaleffects::datagrid, args = datagrid_args)
+  new_data <- new_data[complete.cases(new_data), ]
+  new_data <- data.table::as.data.table(new_data)
 
-  new_data <- do.call(marginaleffects::datagrid, args = datagrid_args) |>
-    data.table::as.data.table()
+  new_data[, c(remove_cols) := list(NULL)]
+  new_data <- new_data[, .(`$weight$` = .N), by = names(new_data)]
   if (is_dynamitefit(model)) {
     new_data <- new_data[order(new_data[[x]])]
     n <- table(new_data[[x]])[1]
     new_data[, c(model$group_var) := as.factor(rep(-(1:n), l = .N))]
+    nd <<- new_data
   }
 
-  prob <- estimate_probs(model, new_data, x, group, lag_state, interval)
+  if (is_dynamitefit(model)) {
+    prob <- estimate_probs.dynamitefit(model, new_data, x, group, interval)
+  } else {
+    prob <- estimate_probs(model, new_data, x, group, lag_state, interval)
+  }
   prob$from = factor(prob$from, levels = response$values)
   prob$to = factor(prob$to, levels = response$values)
 
@@ -118,7 +108,78 @@ stprobs <- function(model,
   attr(stprob, "x_name") <- x
   attr(stprob, "group") <- group
   return(stprob)
+}
 
+estimate_probs <- function(model, new_data, x, group, lag_state, interval) {
+  p <- marginaleffects::avg_predictions(
+    model = model,
+    newdata = new_data,
+    wts = new_data[["$weight$"]],
+    by = c(x, group, lag_state),
+    conf_level = interval,
+  ) |> data.table::as.data.table()
+
+  cols <- c("group", x, orElse(group, ""), lag_state, "estimate", "conf.low", "conf.high")
+  pick_cols <- intersect(cols, names(p))
+
+  p <- p[, ..pick_cols]
+  setnames(p,
+           old = cols,
+           new = c("to", "x", "group", "from", "mean", "lower", "upper"),
+           skip_absent = TRUE)
+
+  if (is.null(group)) {
+    p[, "group" := list(NA)]
+  }
+
+  p <- p[, .(x, group, from, to, mean, lower, upper)]
+  return(p)
+}
+
+estimate_probs.dynamitefit <- function(model, new_data, x, group, interval) {
+  n_draws <- getOption("stprobs_n_draws")
+  alpha <- 1 - interval
+  response <- find_response(model)
+  prob <- NULL
+  for (s in response$values) {
+    new_data[, response$name := list(s)]
+    p <- stats::na.omit(stats::fitted(model, newdata = new_data, df = FALSE, n_draws = n_draws))
+    p <- p[unique(new_data[, .(id, `$weight$`)]), on = .(id)][
+      ,
+      as.list(unlist(lapply(.SD, \(q) list(
+        mean = Hmisc::wtd.mean(q, weights = `$weight$`),
+        quantile = {
+          wq <- Hmisc::wtd.quantile(q, weights = `$weight$`, prob = c(alpha / 2, 1 - (alpha / 2)))
+          names(wq) <- 1:2
+          wq
+        }
+      )))),
+      .SDcols = 1:length(response$values),
+      by = c(x, group)
+    ]
+
+    data.table::setnames(
+      p,
+      old = c(x, orElse(group, "")),
+      new = c("x", "group"),
+      skip_absent = TRUE
+    )
+
+    p <- data.table::melt(
+      p,
+      id = NULL,
+      measure.vars = patterns(".+\\.mean$", ".+\\.quantile\\.1$", ".+\\.quantile\\.2$"),
+      value.name = c("mean", "lower", "upper"),
+      variable.name = "to"
+      )[, to := response$values[to]]
+    p[, from := list(s)]
+    if (is.null(prob)) {
+      prob <- p
+    } else {
+      prob <- rbind(prob, p)
+    }
+  }
+  return(prob)
 }
 
 #' State Transition Proportions
@@ -351,87 +412,4 @@ find_column_name <- function(data, values) {
     }
   }
   stop("Couldn't find a matching column!")
-}
-
-estimate_probs <- function(model, new_data, x, group, lag_state, interval) {
-  if (is_dynamitefit(model)) {
-    return(estimate_probs.dynamitefit(model, new_data, x, group, interval))
-  }
-
-  p <- marginaleffects::avg_predictions(
-    model = model,
-    newdata = new_data,
-    by = c(x, group, lag_state),
-    conf_level = interval,
-  ) |> data.table::as.data.table()
-
-  cols <- c("group", x, orElse(group, ""), lag_state, "estimate", "conf.low", "conf.high")
-  pick_cols <- intersect(cols, names(p))
-
-  p <- p[, ..pick_cols]
-  setnames(p,
-           old = cols,
-           new = c("to", "x", "group", "from", "mean", "lower", "upper"),
-           skip_absent = TRUE)
-
-  if (is.null(group)) {
-    p[, "group" := list(NA)]
-  }
-
-  p <- p[, .(x, group, from, to, mean, lower, upper)]
-  return(p)
-}
-
-estimate_probs.dynamitefit <- function(model, new_data, x, group, interval) {
-  alpha <- 1 - interval
-  response <- find_response(model)
-  prob <- NULL
-  for (s in response$values) {
-    new_data[, response$name := list(s)]
-
-    p <- stats::na.omit(stats::fitted(model, newdata = new_data, df = FALSE))[
-      ,
-      as.list(unlist(lapply(.SD, \(q) list(
-        mean = mean(q),
-        quantile = stats::quantile(q, c(alpha / 2, 1 - (alpha / 2)), names = FALSE)
-      )))),
-      .SDcols = 1:length(response$values),
-      by = c(x, group)
-    ]
-
-    data.table::setnames(
-      p,
-      old = c(x, orElse(group, "")),
-      new = c("x", "group"),
-      skip_absent = TRUE
-    )
-
-    p <- data.table::melt(
-      p,
-      id = NULL,
-      measure.vars = patterns(".+\\.mean$", ".+\\.quantile1$", ".+\\.quantile2$"),
-      value.name = c("mean", "lower", "upper"),
-      variable.name = "to"
-      )[, to := response$values[to]]
-    p[, from := list(s)]
-    if (is.null(prob)) {
-      prob <- p
-    } else {
-      prob <- rbind(prob, p)
-    }
-  }
-  return(prob)
-}
-
-unique_or_mean <- function(q, data, x) {
-  u <- unique(q)
-  l <- length(u)
-  if (l > 10) {
-    col <- find_column_name(data, q)
-    if (col != x) {
-      warning(paste0("Column `", col, "` has many unique values (", l, " > 10)! Defaulting to mean. Use argument `variables` to define specific values."))
-      return(mean(q, na.rm = TRUE))
-    }
-  }
-  return(u)
 }
