@@ -102,7 +102,6 @@ stprobs <- function(model,
   prob$to = factor(prob$to, levels = response$values)
 
   stprob <- manual_stprob(prob)
-  attr(stprob, "pro(b|p)") <- "b"
   attr(stprob, "x_name") <- x
   attr(stprob, "group") <- group
   return(stprob)
@@ -356,7 +355,16 @@ manual_stprob <- function(prob) {
     sum(c("lower", "upper") %in% colnames(prob)) %% 2 == 0
   )
 
-  stprob <- data.table::as.data.table(prob)
+  small <- data.table::as.data.table(prob)
+  if (!("group" %in% colnames(small))) {
+    small$group <- NA
+  }
+  big <- CJ(x = unique(small$x),
+            from = unique(small$from),
+            to = unique(small$to),
+            group = unique(small$group))
+  stprob <- small[big, on = .(x, group, from, to)]
+  attr(stprob, "pro(b|p)") <- "b"
   class(stprob) <- c("stprob", class(stprob))
   return(stprob)
 }
