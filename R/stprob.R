@@ -75,7 +75,6 @@ stprobs <- function(model,
     newdata = fit_data,
     grid_type = "counterfactual"
   )
-  datagrid_args[[x]] <- unique(fit_data[[x]])
   if (is_dynamitefit(model)) {
     datagrid_args[[response$name]] <- response$values[1]
     remove_cols <- c(remove_cols, model$group_var)
