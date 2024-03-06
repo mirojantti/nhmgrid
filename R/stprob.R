@@ -140,8 +140,9 @@ estimate_probs.dynamitefit <- function(model, new_data, x, group, interval) {
   prob <- NULL
   for (s in response$values) {
     new_data[, response$name := list(s)]
-    p <- stats::na.omit(stats::fitted(model, newdata = new_data, df = FALSE, n_draws = n_draws))
-    p <- p[unique(new_data[, .(id, `$weight$`)]), on = .(id)][
+    p <- stats::fitted(model, newdata = new_data, df = FALSE, n_draws = n_draws)
+    p <- p[unique(new_data[, .(id, age, `$weight$`)]), on = .(id, age)]
+    p <- stats::na.omit(p)[
       ,
       as.list(unlist(lapply(.SD, \(q) list(
         mean = Hmisc::wtd.mean(q, weights = `$weight$`),
