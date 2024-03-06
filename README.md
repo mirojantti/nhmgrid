@@ -40,19 +40,19 @@ year for 10 years.
 library(nhmgrid)
 
 head(health, 12)
-#>    id    sex age  state lagstate
-#> 1   1 female  15  terve     <NA>
-#> 2   1 female  16 sairas    terve
-#> 3   1 female  17 sairas   sairas
-#> 4   1 female  18  terve   sairas
-#> 5   1 female  19  terve    terve
-#> 6   1 female  20  terve    terve
-#> 7   1 female  21 sairas    terve
-#> 8   1 female  22 sairas   sairas
-#> 9   1 female  23  terve   sairas
-#> 10  1 female  24 sairas    terve
-#> 11  2 female  20  terve     <NA>
-#> 12  2 female  21  terve    terve
+#>    id    sex age   state lagstate
+#> 1   1 female  15 healthy     <NA>
+#> 2   1 female  16    sick  healthy
+#> 3   1 female  17    sick     sick
+#> 4   1 female  18 healthy     sick
+#> 5   1 female  19 healthy  healthy
+#> 6   1 female  20 healthy  healthy
+#> 7   1 female  21    sick  healthy
+#> 8   1 female  22    sick     sick
+#> 9   1 female  23 healthy     sick
+#> 10  1 female  24    sick  healthy
+#> 11  2 female  20 healthy     <NA>
+#> 12  2 female  21 healthy  healthy
 nrow(health)
 #> [1] 1000
 ```
