@@ -360,10 +360,10 @@ manual_stprob <- function(prob) {
   if (!("group" %in% colnames(small))) {
     small$group <- NA
   }
-  big <- CJ(x = unique(small$x),
-            from = unique(small$from),
-            to = unique(small$to),
-            group = unique(small$group))
+  big <- data.table::CJ(x = unique(small$x),
+                        from = unique(small$from),
+                        to = unique(small$to),
+                        group = unique(small$group))
   stprob <- small[big, on = .(x, group, from, to)]
   attr(stprob, "pro(b|p)") <- "b"
   class(stprob) <- c("stprob", class(stprob))
