@@ -27,12 +27,12 @@ NULL
 
 #' Simulated health state dataset
 #'
-#' This panel data contains simulated health state measurements from 50
+#' This panel data contains simulated health state measurements from 100
 #' individuals over 10 years. This data set is used in the examples of the
 #' [nhmgrid] package.
 #'
 #' @format ## `health`
-#' A data frame with 500 rows and 4 columns:
+#' A data frame with 1000 rows and 4 columns:
 #' \describe{
 #'   \item{id}{Person identification number}
 #'   \item{age}{Person age in years}

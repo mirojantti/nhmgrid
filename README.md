@@ -33,28 +33,28 @@ devtools::install_github("mirojantti/nhmgrid")
 ## Example
 
 The package contains a simulated panel data set `health`. The data set
-consists of 50 individuals whose health state has been measured every
+consists of 100 individuals whose health state has been measured every
 year for 10 years.
 
 ``` r
 library(nhmgrid)
 
 head(health, 12)
-#>    id    sex age    state lagstate
-#> 1   1   male  32     sick     <NA>
-#> 2   1   male  33     sick     sick
-#> 3   1   male  34  healthy     sick
-#> 4   1   male  35  healthy  healthy
-#> 5   1   male  36     sick  healthy
-#> 6   1   male  37  healthy     sick
-#> 7   1   male  38  healthy  healthy
-#> 8   1   male  39  healthy  healthy
-#> 9   1   male  40 deceased  healthy
-#> 10  1   male  41 deceased deceased
-#> 11  2 female   6  healthy     <NA>
-#> 12  2 female   7  healthy  healthy
+#>    id    sex age  state lagstate
+#> 1   1 female  15  terve     <NA>
+#> 2   1 female  16 sairas    terve
+#> 3   1 female  17 sairas   sairas
+#> 4   1 female  18  terve   sairas
+#> 5   1 female  19  terve    terve
+#> 6   1 female  20  terve    terve
+#> 7   1 female  21 sairas    terve
+#> 8   1 female  22 sairas   sairas
+#> 9   1 female  23  terve   sairas
+#> 10  1 female  24 sairas    terve
+#> 11  2 female  20  terve     <NA>
+#> 12  2 female  21  terve    terve
 nrow(health)
-#> [1] 500
+#> [1] 1000
 ```
 
 One can calculate the transition proportions between the health states

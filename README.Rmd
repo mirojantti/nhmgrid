@@ -36,10 +36,14 @@ You can install the most recent version of `nhmgrid` by running the following li
 devtools::install_github("mirojantti/nhmgrid")
 ```
 
+```{r, include = FALSE}
+devtools::load_all(".")
+```
+
 ## Example
 
 The package contains a simulated panel data set `health`. The data set consists
-of 50 individuals whose health state has been measured every year for 10 years.
+of 100 individuals whose health state has been measured every year for 10 years.
 
 ```{r}
 library(nhmgrid)
